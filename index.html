@@ -60,7 +60,6 @@
             background: #fff;
         }
 
-        /* Status Metrics Summary Cards */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -101,7 +100,6 @@
         .card-approved { border-top: 5px solid #28a745; }
         .card-posted { border-top: 5px solid #6f42c1; }
 
-        /* Filter Controls */
         .controls-card {
             background: #fff;
             border: 2px solid var(--border);
@@ -125,7 +123,6 @@
             width: 100%;
         }
 
-        /* Table Design */
         .table-container { overflow-x: auto; border: 2px solid var(--border); }
         
         table {
@@ -413,6 +410,18 @@
             renderDashboard();
         }
 
+        // Helper to find object keys flexibly regardless of spaces or uppercase/lowercase
+        function getVal(row, keyName) {
+            const keys = Object.keys(row);
+            const target = keyName.toLowerCase().trim();
+            for (let k of keys) {
+                if (k.toLowerCase().trim() === target) {
+                    return row[k];
+                }
+            }
+            return "";
+        }
+
         async function fetchFromSheet() {
             setStatus("🔄 Syncing...");
             try {
@@ -421,18 +430,24 @@
                 
                 projects = data.map(row => {
                     let historyParsed = [];
-                    try { historyParsed = typeof row.History === 'string' ? JSON.parse(row.History) : row.History || []; } 
-                    catch(e) { historyParsed = row.History ? [{timestamp: 'Legacy', text: row.History}] : []; }
+                    const rawHist = getVal(row, "History");
+                    try { 
+                        historyParsed = typeof rawHist === 'string' ? JSON.parse(rawHist) : rawHist || []; 
+                    } catch(e) { 
+                        historyParsed = rawHist ? [{timestamp: 'Legacy', text: String(rawHist)}] : []; 
+                    }
+
+                    const rawStatus = String(getVal(row, "Status")).trim().toUpperCase();
 
                     return {
-                        id: String(row.ID || Date.now()),
-                        eventName: row["Event Name"] || "",
-                        inst: row["Institution"] || row["Institution "] || "",
-                        medium: row["Medium"] || "",
-                        type: row["Type"] || "",
-                        status: row["Status"] || row["Status "] || "DOING",
-                        driveLink: row["Drive Link"] || "",
-                        approver: row["Approver"] || "",
+                        id: String(getVal(row, "ID") || Date.now()),
+                        eventName: getVal(row, "Event Name") || "Untitled Project",
+                        inst: getVal(row, "Institution") || "Misc",
+                        medium: getVal(row, "Medium") || "Misc",
+                        type: getVal(row, "Type") || "Misc",
+                        status: rawStatus || "DOING",
+                        driveLink: getVal(row, "Drive Link") || "",
+                        approver: getVal(row, "Approver") || "",
                         history: Array.isArray(historyParsed) ? historyParsed : []
                     };
                 });
@@ -463,7 +478,7 @@
                 await fetch(API_URL, {
                     method: "POST",
                     mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify(sheetPayload)
                 });
                 setStatus("🟢 Saved Live");
@@ -491,7 +506,7 @@
             });
 
             if(filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">No projects found. Click <b>"➕ New Project"</b> to add one.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">No matching projects found.</td></tr>`;
                 return;
             }
 
@@ -505,9 +520,9 @@
                     <td>
                         <strong>${escapeHtml(p.eventName)}</strong>
                         <div class="tag-group">
-                            <span class="tag tag-inst">${p.inst}</span>
-                            <span class="tag tag-medium">${p.medium}</span>
-                            <span class="tag tag-type">${p.type}</span>
+                            <span class="tag tag-inst">${escapeHtml(p.inst)}</span>
+                            <span class="tag tag-medium">${escapeHtml(p.medium)}</span>
+                            <span class="tag tag-type">${escapeHtml(p.type)}</span>
                         </div>
                     </td>
                     <td>
@@ -520,7 +535,7 @@
                         </select>
                     </td>
                     <td>
-                        ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="drive-link">🔗 Open Google Drive Folder/File</a>` : '<em>No link attached</em>'}
+                        ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="drive-link">🔗 Open Google Drive Link</a>` : '<em>No link attached</em>'}
                         <br><button onclick="editProject('${p.id}')" style="margin-top:8px; font-size:11px;" class="btn">Edit Details</button>
                     </td>
                     <td>${p.approver ? escapeHtml(p.approver) : '<em>No approver assigned</em>'}</td>
