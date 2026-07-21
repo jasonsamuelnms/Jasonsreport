@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Production Lifecycle Dashboard</title>
+    <style>
+        :root {
+            --primary: #0f4c81;
+            --border: #111;
+            --bg-light: #f4f6f8;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: #fafafa; color: #222; }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 22px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-header p { margin: 4px 0 0 0; font-size: 11px; font-weight: bold; color: #555; }
+
+        .btn {
+            padding: 8px 14px;
+            font-weight: bold;
+            font-size: 13px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px var(--border);
+            transition: all 0.1s ease;
+        }
+
+        .btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0px var(--border); }
+        .btn-green { background-color: var(--accent-green); color: white; }
+        .btn-blue { background-color: var(--primary); color: white; }
+        .btn-yellow { background-color: #ffc107; color: #111; }
+
+        .sync-status {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            background: #fff;
+        }
+
+        /* Filter Controls */
+        .controls-card {
+            background: #fff;
+            border: 2px solid var(--border);
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
+        .filter-group label { font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        
+        input[type="text"], input[type="url"], select {
+            padding: 8px;
+            border: 2px solid var(--border);
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: 2px;
+            width: 100%;
+        }
+
+        /* Table Design */
+        .table-container { overflow-x: auto; border: 2px solid var(--border); }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px 10px;
+            border: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .tag-group { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+        .tag {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        .tag-inst { background: #e3f2fd; color: #0d47a1; }
+        .tag-medium { background: #e8f5e9; color: #1b5e20; }
+        .tag-type { background: #fbe9e7; color: #bf360c; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 11px;
+            color: white;
+            border: 2px solid var(--border);
+            box-shadow: 2px 2px 0px var(--border);
+            text-transform: uppercase;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .status-DOING { background-color: #17a2b8; }
+        .status-WAITING { background-color: #fd7e14; }
+        .status-CORRECTIONS { background-color: #dc3545; }
+        .status-APPROVED { background-color: #28a745; }
+        .status-POSTED { background-color: #6f42c1; }
+
+        .history-box {
+            max-height: 100px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #ccc;
+            padding: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .history-item { margin-bottom: 4px; border-bottom: 1px dashed #ddd; padding-bottom: 2px; }
+        .history-time { font-weight: bold; color: #555; }
+
+        .drive-link {
+            display: inline-block;
+            margin-top: 6px;
+            color: #0d6efd;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 12px;
+        }
+        .drive-link:hover { text-decoration: underline; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border: 3px solid var(--border);
+            padding: 20px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 6px 6px 0px var(--border);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .modal-header h2 { margin: 0; font-size: 18px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .full-width { grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <div>
+            <h1>📋 Live Production Lifecycle Dashboard</h1>
+            <p>REAL-TIME GOOGLE SHEETS INTEGRATED ENGINE</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span id="syncStatus" class="sync-status">🔄 Connecting...</span>
+            <button class="btn btn-green" onclick="exportCSV()">📥 Export CSV</button>
+            <button class="btn btn-blue" onclick="openModal()">➕ New Project</button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="controls-card">
+        <div class="filter-group" style="flex: 2;">
+            <label>🔍 Search Projects</label>
+            <input type="text" id="searchInput" placeholder="Search by Event Name, Approver, Drive Link..." oninput="renderDashboard()">
+        </div>
+        
+        <div class="filter-group">
+            <label>🏫 Institution / School</label>
+            <select id="filterInst" onchange="renderDashboard()">
+                <option value="">All Institutions</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>📌 Lifecycle Status</label>
+            <select id="filterStatus" onchange="renderDashboard()">
+                <option value="">All Statuses</option>
+                <option value="DOING">Doing</option>
+                <option value="WAITING">Waiting for Approval</option>
+                <option value="CORRECTIONS">Corrections Needed</option>
+                <option value="APPROVED">Approved</option>
+                <option value="POSTED">Posted</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Data Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Project Name & Info</th>
+                    <th style="width: 18%;">Lifecycle Status</th>
+                    <th style="width: 22%;">Final Drive Link & Spec</th>
+                    <th style="width: 15%;">Approver</th>
+                    <th style="width: 20%;">Revision History Logs</th>
+                </tr>
+            </thead>
+            <tbody id="dashboardTable">
+                <tr><td colspan="5" style="text-align:center; padding:20px;">Loading projects from Google Sheets...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add/Edit Project Modal -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Project</h2>
+                <button class="btn" onclick="closeModal()">X</button>
+            </div>
+            <form id="projectForm" onsubmit="saveProject(event)">
+                <input type="hidden" id="projectId">
+                <div class="form-grid">
+                    <div class="filter-group full-width">
+                        <label>Event Name / Task Title</label>
+                        <input type="text" id="eventName" required placeholder="e.g. Annual Sports Day Banner">
+                    </div>
+                    <div class="filter-group">
+                        <label>Institution / School</label>
+                        <select id="instSelect" required></select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Medium</label>
+                        <select id="mediumSelect" required></select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Post Type</label>
+                        <select id="typeSelect" required></select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select id="statusSelect" required>
+                            <option value="DOING">Doing</option>
+                            <option value="WAITING">Waiting for Approval</option>
+                            <option value="CORRECTIONS">Corrections Needed</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="POSTED">Posted</option>
+                        </select>
+                    </div>
+                    <div class="filter-group full-width">
+                        <label>Final Approved File / Folder (Google Drive Link)</label>
+                        <input type="url" id="driveLink" placeholder="https://drive.google.com/drive/folders/...">
+                    </div>
+                    <div class="filter-group full-width">
+                        <label>Final Approver Name</label>
+                        <input type="text" id="approverName" placeholder="e.g. Principal / Marketing Lead">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; text-align: right;">
+                    <button type="button" class="btn btn-yellow" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-green">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzpKPKVh5FaztgRa9-SdPenBh-2AEW6Ffgpa17xBgzq-KZkvuT9TD-c-NPe0sMAaGlS5w/exec";
+
+        const INSTITUTIONS = ["MAT", "CBSE", "KPT", "UDT", "ORICBE", "ORIKOT", "NIK", "KINCBE", "KINUDT", "KINGHA", "KINRSP", "GRP", "QLA", "129", "Misc"];
+        const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
+        const TYPES = ["4:5", "1:1", "REEL", "Banner", "Print design", "Shoot", "Scripting", "posting", "analysing", "Coding", "Misc", "19:6"];
+
+        let projects = [];
+
+        function setStatus(msg, isError = false) {
+            const el = document.getElementById("syncStatus");
+            el.innerText = msg;
+            el.style.color = isError ? "red" : "green";
+        }
+
+        function initSelectOptions() {
+            populateSelect("filterInst", INSTITUTIONS, "All Institutions");
+            populateSelect("instSelect", INSTITUTIONS);
+            populateSelect("mediumSelect", MEDIUMS);
+            populateSelect("typeSelect", TYPES);
+        }
+
+        function populateSelect(id, list, defaultLabel = null) {
+            const el = document.getElementById(id);
+            el.innerHTML = defaultLabel ? `<option value="">${defaultLabel}</option>` : '';
+            list.forEach(item => {
+                el.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+        }
+
+        async function fetchFromSheet() {
+            setStatus("🔄 Syncing...");
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                projects = data.map(row => {
+                    let historyParsed = [];
+                    try { historyParsed = typeof row.History === 'string' ? JSON.parse(row.History) : row.History || []; } 
+                    catch(e) { historyParsed = row.History ? [{timestamp: 'Legacy', text: row.History}] : []; }
+
+                    return {
+                        id: String(row.ID || Date.now()),
+                        eventName: row["Event Name"] || "",
+                        inst: row["Institution"] || row["Institution "] || "",
+                        medium: row["Medium"] || "",
+                        type: row["Type"] || "",
+                        status: row["Status"] || row["Status "] || "DOING",
+                        driveLink: row["Drive Link"] || "",
+                        approver: row["Approver"] || "",
+                        history: Array.isArray(historyParsed) ? historyParsed : []
+                    };
+                });
+                setStatus("🟢 Live");
+                renderDashboard();
+            } catch (err) {
+                console.error(err);
+                setStatus("⚠️ Sync Error", true);
+            }
+        }
+
+        async function pushToSheet() {
+            setStatus("⏳ Saving to Sheet...");
+            const sheetPayload = projects.map(p => ({
+                "ID": p.id,
+                "Event Name": p.eventName,
+                "Institution": p.inst,
+                "Medium": p.medium,
+                "Type": p.type,
+                "Status": p.status,
+                "Drive Link": p.driveLink,
+                "Approver": p.approver,
+                "History": JSON.stringify(p.history)
+            }));
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(sheetPayload)
+                });
+                setStatus("🟢 Saved Live");
+            } catch (err) {
+                console.error(err);
+                setStatus("⚠️ Save Failed", true);
+            }
+        }
+
+        function renderDashboard() {
+            const tbody = document.getElementById("dashboardTable");
+            tbody.innerHTML = "";
+
+            const search = document.getElementById("searchInput").value.toLowerCase();
+            const instFilter = document.getElementById("filterInst").value;
+            const statusFilter = document.getElementById("filterStatus").value;
+
+            const filtered = projects.filter(p => {
+                const matchesSearch = p.eventName.toLowerCase().includes(search) || 
+                                      (p.approver && p.approver.toLowerCase().includes(search)) ||
+                                      (p.driveLink && p.driveLink.toLowerCase().includes(search));
+                const matchesInst = instFilter ? p.inst === instFilter : true;
+                const matchesStatus = statusFilter ? p.status === statusFilter : true;
+                return matchesSearch && matchesInst && matchesStatus;
+            });
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">No projects found. Click <b>"➕ New Project"</b> to add one.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const historyHtml = p.history.map(h => 
+                    `<div class="history-item"><span class="history-time">[${h.timestamp}]</span> ${escapeHtml(h.text)}</div>`
+                ).reverse().join('');
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>
+                        <strong>${escapeHtml(p.eventName)}</strong>
+                        <div class="tag-group">
+                            <span class="tag tag-inst">${p.inst}</span>
+                            <span class="tag tag-medium">${p.medium}</span>
+                            <span class="tag tag-type">${p.type}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <select onchange="quickUpdateStatus('${p.id}', this.value)" class="status-badge status-${p.status}">
+                            <option value="DOING" ${p.status === 'DOING' ? 'selected' : ''}>DOING</option>
+                            <option value="WAITING" ${p.status === 'WAITING' ? 'selected' : ''}>WAITING APPROVAL</option>
+                            <option value="CORRECTIONS" ${p.status === 'CORRECTIONS' ? 'selected' : ''}>CORRECTIONS</option>
+                            <option value="APPROVED" ${p.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
+                            <option value="POSTED" ${p.status === 'POSTED' ? 'selected' : ''}>POSTED</option>
+                        </select>
+                    </td>
+                    <td>
+                        ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="drive-link">🔗 Open Google Drive Folder/File</a>` : '<em>No link attached</em>'}
+                        <br><button onclick="editProject('${p.id}')" style="margin-top:8px; font-size:11px;" class="btn">Edit Details</button>
+                    </td>
+                    <td>${p.approver ? escapeHtml(p.approver) : '<em>No approver assigned</em>'}</td>
+                    <td><div class="history-box">${historyHtml || '<em>No records</em>'}</div></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openModal(editId = null) {
+            const modal = document.getElementById("projectModal");
+            const form = document.getElementById("projectForm");
+            form.reset();
+
+            if (editId) {
+                const p = projects.find(item => item.id === editId);
+                document.getElementById("modalTitle").innerText = "Edit Project";
+                document.getElementById("projectId").value = p.id;
+                document.getElementById("eventName").value = p.eventName;
+                document.getElementById("instSelect").value = p.inst;
+                document.getElementById("mediumSelect").value = p.medium;
+                document.getElementById("typeSelect").value = p.type;
+                document.getElementById("statusSelect").value = p.status;
+                document.getElementById("driveLink").value = p.driveLink || "";
+                document.getElementById("approverName").value = p.approver || "";
+            } else {
+                document.getElementById("modalTitle").innerText = "Create New Project";
+                document.getElementById("projectId").value = "";
+            }
+            modal.style.display = "flex";
+        }
+
+        function closeModal() { document.getElementById("projectModal").style.display = "none"; }
+
+        async function saveProject(e) {
+            e.preventDefault();
+            const id = document.getElementById("projectId").value;
+            const now = new Date().toLocaleString();
+
+            const projectData = {
+                id: id || Date.now().toString(),
+                eventName: document.getElementById("eventName").value,
+                inst: document.getElementById("instSelect").value,
+                medium: document.getElementById("mediumSelect").value,
+                type: document.getElementById("typeSelect").value,
+                status: document.getElementById("statusSelect").value,
+                driveLink: document.getElementById("driveLink").value,
+                approver: document.getElementById("approverName").value,
+            };
+
+            if (id) {
+                const idx = projects.findIndex(p => p.id === id);
+                projectData.history = projects[idx].history;
+                projectData.history.push({ timestamp: now, text: "Project details updated." });
+                projects[idx] = projectData;
+            } else {
+                projectData.history = [{ timestamp: now, text: `Project created with status ${projectData.status}` }];
+                projects.push(projectData);
+            }
+
+            closeModal();
+            renderDashboard();
+            await pushToSheet();
+        }
+
+        async function quickUpdateStatus(id, newStatus) {
+            const p = projects.find(item => item.id === id);
+            if (p && p.status !== newStatus) {
+                p.status = newStatus;
+                p.history.push({ 
+                    timestamp: new Date().toLocaleString(), 
+                    text: `Status changed to ${newStatus}` 
+                });
+                renderDashboard();
+                await pushToSheet();
+            }
+        }
+
+        function editProject(id) { openModal(id); }
+
+        function exportCSV() {
+            if(projects.length === 0) { alert("No data to export!"); return; }
+            let csv = "ID,Event Name,Institution,Medium,Type,Status,Drive Link,Approver\n";
+            projects.forEach(p => {
+                csv += `"${p.id}","${p.eventName}","${p.inst}","${p.medium}","${p.type}","${p.status}","${p.driveLink || ''}","${p.approver || ''}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `dashboard_backup.csv`);
+            a.click();
+        }
+
+        function escapeHtml(str) {
+            return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        initSelectOptions();
+        fetchFromSheet();
+    </script>
+</body>
+</html>
