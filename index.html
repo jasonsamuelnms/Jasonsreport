@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Production Lifecycle Dashboard</title>
+    <title>Jasons Dashboard</title>
     <style>
         :root {
             --primary: #0f4c81;
@@ -27,10 +27,10 @@
 
         .dashboard-header h1 {
             margin: 0;
-            font-size: 22px;
+            font-size: 26px;
             color: var(--primary);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
         }
 
         .dashboard-header p { margin: 4px 0 0 0; font-size: 11px; font-weight: bold; color: #555; }
@@ -59,6 +59,47 @@
             border-radius: 3px;
             background: #fff;
         }
+
+        /* Status Metrics Summary Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background: white;
+            border: 2px solid var(--border);
+            padding: 12px;
+            border-radius: 4px;
+            box-shadow: 3px 3px 0px var(--border);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .kpi-card:hover { transform: translateY(-2px); }
+
+        .kpi-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 900;
+            color: #111;
+        }
+
+        .card-total { border-top: 5px solid #0f4c81; }
+        .card-doing { border-top: 5px solid #17a2b8; }
+        .card-waiting { border-top: 5px solid #fd7e14; }
+        .card-corrections { border-top: 5px solid #dc3545; }
+        .card-approved { border-top: 5px solid #28a745; }
+        .card-posted { border-top: 5px solid #6f42c1; }
 
         /* Filter Controls */
         .controls-card {
@@ -192,13 +233,41 @@
 
     <div class="dashboard-header">
         <div>
-            <h1>📋 Live Production Lifecycle Dashboard</h1>
+            <h1>📋 JASONS DASHBOARD</h1>
             <p>REAL-TIME GOOGLE SHEETS INTEGRATED ENGINE</p>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <span id="syncStatus" class="sync-status">🔄 Connecting...</span>
             <button class="btn btn-green" onclick="exportCSV()">📥 Export CSV</button>
             <button class="btn btn-blue" onclick="openModal()">➕ New Project</button>
+        </div>
+    </div>
+
+    <!-- Status Counter Cards (KPIs) -->
+    <div class="kpi-grid">
+        <div class="kpi-card card-total" onclick="filterByCard('')">
+            <div class="kpi-title">Total Projects</div>
+            <div class="kpi-value" id="countTotal">0</div>
+        </div>
+        <div class="kpi-card card-doing" onclick="filterByCard('DOING')">
+            <div class="kpi-title">Doing</div>
+            <div class="kpi-value" id="countDoing">0</div>
+        </div>
+        <div class="kpi-card card-waiting" onclick="filterByCard('WAITING')">
+            <div class="kpi-title">Waiting Approval</div>
+            <div class="kpi-value" id="countWaiting">0</div>
+        </div>
+        <div class="kpi-card card-corrections" onclick="filterByCard('CORRECTIONS')">
+            <div class="kpi-title">Corrections</div>
+            <div class="kpi-value" id="countCorrections">0</div>
+        </div>
+        <div class="kpi-card card-approved" onclick="filterByCard('APPROVED')">
+            <div class="kpi-title">Approved</div>
+            <div class="kpi-value" id="countApproved">0</div>
+        </div>
+        <div class="kpi-card card-posted" onclick="filterByCard('POSTED')">
+            <div class="kpi-title">Posted</div>
+            <div class="kpi-value" id="countPosted">0</div>
         </div>
     </div>
 
@@ -330,6 +399,20 @@
             });
         }
 
+        function updateCounters() {
+            document.getElementById("countTotal").innerText = projects.length;
+            document.getElementById("countDoing").innerText = projects.filter(p => p.status === "DOING").length;
+            document.getElementById("countWaiting").innerText = projects.filter(p => p.status === "WAITING").length;
+            document.getElementById("countCorrections").innerText = projects.filter(p => p.status === "CORRECTIONS").length;
+            document.getElementById("countApproved").innerText = projects.filter(p => p.status === "APPROVED").length;
+            document.getElementById("countPosted").innerText = projects.filter(p => p.status === "POSTED").length;
+        }
+
+        function filterByCard(status) {
+            document.getElementById("filterStatus").value = status;
+            renderDashboard();
+        }
+
         async function fetchFromSheet() {
             setStatus("🔄 Syncing...");
             try {
@@ -354,6 +437,7 @@
                     };
                 });
                 setStatus("🟢 Live");
+                updateCounters();
                 renderDashboard();
             } catch (err) {
                 console.error(err);
@@ -498,6 +582,7 @@
             }
 
             closeModal();
+            updateCounters();
             renderDashboard();
             await pushToSheet();
         }
@@ -510,6 +595,7 @@
                     timestamp: new Date().toLocaleString(), 
                     text: `Status changed to ${newStatus}` 
                 });
+                updateCounters();
                 renderDashboard();
                 await pushToSheet();
             }
