@@ -367,7 +367,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzpKPKVh5FaztgRa9-SdPenBh-2AEW6Ffgpa17xBgzq-KZkvuT9TD-c-NPe0sMAaGlS5w/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwgw8mZUy0tBZJ07Q1v-d62uFlbS4J5lmkt_SX5oXY5Zv_VWSFX17fCiK16kaNIeQM4xw/exec";
 
         const INSTITUTIONS = ["MAT", "CBSE", "KPT", "UDT", "ORICBE", "ORIKOT", "NIK", "KINCBE", "KINUDT", "KINGHA", "KINRSP", "GRP", "QLA", "129", "Misc"];
         const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
@@ -410,16 +410,15 @@
             renderDashboard();
         }
 
-        // Helper to find object keys flexibly regardless of spaces or uppercase/lowercase
-        function getVal(row, keyName) {
-            const keys = Object.keys(row);
-            const target = keyName.toLowerCase().trim();
-            for (let k of keys) {
-                if (k.toLowerCase().trim() === target) {
-                    return row[k];
-                }
-            }
-            return "";
+        function normalizeStatus(val) {
+            if (!val) return "DOING";
+            val = String(val).trim().toUpperCase();
+            if (val.includes("WAIT")) return "WAITING";
+            if (val.includes("CORRECT")) return "CORRECTIONS";
+            if (val.includes("APPROV")) return "APPROVED";
+            if (val.includes("POST")) return "POSTED";
+            if (val.includes("DO")) return "DOING";
+            return val;
         }
 
         async function fetchFromSheet() {
@@ -428,26 +427,26 @@
                 const res = await fetch(API_URL);
                 const data = await res.json();
                 
-                projects = data.map(row => {
+                projects = data.map((row, index) => {
                     let historyParsed = [];
-                    const rawHist = getVal(row, "History");
+                    const rawHist = row.History || row.history;
                     try { 
                         historyParsed = typeof rawHist === 'string' ? JSON.parse(rawHist) : rawHist || []; 
                     } catch(e) { 
                         historyParsed = rawHist ? [{timestamp: 'Legacy', text: String(rawHist)}] : []; 
                     }
 
-                    const rawStatus = String(getVal(row, "Status")).trim().toUpperCase();
+                    const rawStatus = row["Status"] || row["status"] || row["STATUS"] || "DOING";
 
                     return {
-                        id: String(getVal(row, "ID") || Date.now()),
-                        eventName: getVal(row, "Event Name") || "Untitled Project",
-                        inst: getVal(row, "Institution") || "Misc",
-                        medium: getVal(row, "Medium") || "Misc",
-                        type: getVal(row, "Type") || "Misc",
-                        status: rawStatus || "DOING",
-                        driveLink: getVal(row, "Drive Link") || "",
-                        approver: getVal(row, "Approver") || "",
+                        id: String(row["ID"] || row["id"] || (Date.now() + index)),
+                        eventName: row["Event Name"] || row["eventName"] || "Untitled Project",
+                        inst: row["Institution"] || row["institution"] || "Misc",
+                        medium: row["Medium"] || row["medium"] || "Misc",
+                        type: row["Type"] || row["type"] || "Misc",
+                        status: normalizeStatus(rawStatus),
+                        driveLink: row["Drive Link"] || row["driveLink"] || "",
+                        approver: row["Approver"] || row["approver"] || "",
                         history: Array.isArray(historyParsed) ? historyParsed : []
                     };
                 });
