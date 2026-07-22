@@ -182,6 +182,7 @@
             text-transform: uppercase;
             text-align: center;
             cursor: pointer;
+            width: 100%;
         }
 
         /* Status Badge Colors */
@@ -194,6 +195,25 @@
         .status-SHOOTED { background-color: #20c997; }
         .status-REJECTED { background-color: #6c757d; }
         .status-ON_HOLD { background-color: #e83e8c; }
+
+        /* Compact Date Badges under Status */
+        .status-date-meta {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #444;
+            letter-spacing: 0.3px;
+        }
+        .date-chip {
+            background: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
 
         .history-box {
             max-height: 100px;
@@ -282,11 +302,11 @@
         </div>
     </div>
 
-    <!-- Filters Section -->
+    <!-- Controls Section -->
     <div class="controls-card">
         <div class="filter-group" style="flex: 2;">
-            <label>🔍 Search Projects</label>
-            <input type="text" id="searchInput" placeholder="Search by Event Name, Description, Approver..." oninput="renderDashboard()">
+            <label>🔍 Search Projects / Months (e.g. June, July, 06-JUN-26)</label>
+            <input type="text" id="searchInput" placeholder="Search by Event, Description, Approver, Month (June, July)..." oninput="renderDashboard()">
         </div>
         
         <div class="filter-group">
@@ -319,7 +339,7 @@
             <thead>
                 <tr>
                     <th style="width: 25%;">Project Name & Info</th>
-                    <th style="width: 18%;">Status</th>
+                    <th style="width: 18%;">Status & Dates</th>
                     <th style="width: 22%;">Final Drive Link & Spec</th>
                     <th style="width: 15%;">Approver</th>
                     <th style="width: 20%;">Revision History Logs</th>
@@ -399,6 +419,13 @@
         const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
         const TYPES = ["4:5", "1:1", "REEL", "Banner", "Print design", "Shoot", "Scripting", "posting", "analysing", "Coding", "Misc", "19:6"];
 
+        const MONTH_MAP = {
+            "01": ["jan", "january"], "02": ["feb", "february"], "03": ["mar", "march"],
+            "04": ["apr", "april"], "05": ["may"], "06": ["jun", "june"],
+            "07": ["jul", "july"], "08": ["aug", "august"], "09": ["sep", "september"],
+            "10": ["oct", "october"], "11": ["nov", "november"], "12": ["dec", "december"]
+        };
+
         let projects = [];
 
         function setStatus(msg, isError = false) {
@@ -420,6 +447,29 @@
             list.forEach(item => {
                 el.innerHTML += `<option value="${item}">${item}</option>`;
             });
+        }
+
+        function formatDateShort(dateObj) {
+            if (!dateObj || isNaN(dateObj.getTime())) return "";
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const month = months[dateObj.getMonth()];
+            const year = String(dateObj.getFullYear()).slice(-2);
+            return `${day}-${month}-${year}`;
+        }
+
+        function getFullSearchString(p) {
+            let str = `${p.eventName} ${p.desc} ${p.approver} ${p.createdDate} ${p.lastUpdated} ${p.inst} ${p.medium} ${p.type} ${p.status}`.toLowerCase();
+            
+            // Add full month names if date exists
+            const dateObj = new Date(p.createdDate);
+            if (!isNaN(dateObj.getTime())) {
+                const monthKey = String(dateObj.getMonth() + 1).padStart(2, '0');
+                if (MONTH_MAP[monthKey]) {
+                    str += ` ${MONTH_MAP[monthKey].join(" ")}`;
+                }
+            }
+            return str;
         }
 
         function updateCounters() {
@@ -452,15 +502,15 @@
         }
 
         function getLatestTimestamp(p) {
-            if (p.history && p.history.length > 0) {
-                const lastLog = p.history[p.history.length - 1];
-                if (lastLog && lastLog.timestamp) {
-                    const parsed = Date.parse(lastLog.timestamp);
-                    if (!isNaN(parsed)) return parsed;
-                }
+            if (p.lastUpdated) {
+                const parsed = Date.parse(p.lastUpdated);
+                if (!isNaN(parsed)) return parsed;
             }
-            const numericId = Number(p.id);
-            return !isNaN(numericId) ? numericId : 0;
+            if (p.createdDate) {
+                const parsed = Date.parse(p.createdDate);
+                if (!isNaN(parsed)) return parsed;
+            }
+            return Number(p.id) || 0;
         }
 
         async function fetchFromSheet() {
@@ -479,6 +529,7 @@
                     }
 
                     const rawStatus = row["Status"] || row["status"] || row["STATUS"] || "DOING";
+                    const nowFormatted = formatDateShort(new Date());
 
                     return {
                         id: String(row["ID"] || row["id"] || (Date.now() + index)),
@@ -490,6 +541,8 @@
                         driveLink: row["Drive Link"] || row["driveLink"] || "",
                         approver: row["Approver"] || row["approver"] || "",
                         desc: row["Description"] || row["description"] || "",
+                        createdDate: row["Created Date"] || row["createdDate"] || nowFormatted,
+                        lastUpdated: row["Last Updated"] || row["lastUpdated"] || nowFormatted,
                         history: Array.isArray(historyParsed) ? historyParsed : []
                     };
                 });
@@ -514,7 +567,9 @@
                 "Drive Link": p.driveLink,
                 "Approver": p.approver,
                 "History": JSON.stringify(p.history),
-                "Description": p.desc || ""
+                "Description": p.desc || "",
+                "Created Date": p.createdDate || "",
+                "Last Updated": p.lastUpdated || ""
             }));
 
             try {
@@ -535,20 +590,18 @@
             const tbody = document.getElementById("dashboardTable");
             tbody.innerHTML = "";
 
-            const search = document.getElementById("searchInput").value.toLowerCase();
+            const search = document.getElementById("searchInput").value.toLowerCase().trim();
             const instFilter = document.getElementById("filterInst").value;
             const statusFilter = document.getElementById("filterStatus").value;
 
-            // Sort by newest activity first
+            // Sort by newest update first
             const sortedProjects = [...projects].sort((a, b) => getLatestTimestamp(b) - getLatestTimestamp(a));
 
             const filtered = sortedProjects.filter(p => {
-                const matchesSearch = p.eventName.toLowerCase().includes(search) || 
-                                      (p.desc && p.desc.toLowerCase().includes(search)) ||
-                                      (p.approver && p.approver.toLowerCase().includes(search)) ||
-                                      (p.driveLink && p.driveLink.toLowerCase().includes(search));
-                const matchesInst = instFilter ? p.inst === instFilter : true;
-                const matchesStatus = statusFilter ? p.status === statusFilter : true;
+                const searchStr = getFullSearchString(p);
+                const matchesSearch = !search || searchStr.includes(search);
+                const matchesInst = !instFilter || p.inst === instFilter;
+                const matchesStatus = !statusFilter || p.status === statusFilter;
                 return matchesSearch && matchesInst && matchesStatus;
             });
 
@@ -585,6 +638,10 @@
                             <option value="REJECTED" ${p.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
                             <option value="ON_HOLD" ${p.status === 'ON_HOLD' ? 'selected' : ''}>ON HOLD</option>
                         </select>
+                        <div class="status-date-meta">
+                            <span class="date-chip">CRT: ${p.createdDate || 'N/A'}</span>
+                            <span class="date-chip">UPD: ${p.lastUpdated || 'N/A'}</span>
+                        </div>
                     </td>
                     <td>
                         ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="drive-link">🔗 Open Google Drive Link</a>` : '<em>No link attached</em>'}
@@ -626,28 +683,41 @@
         async function saveProject(e) {
             e.preventDefault();
             const id = document.getElementById("projectId").value;
-            const now = new Date().toLocaleString();
-
-            const projectData = {
-                id: id || Date.now().toString(),
-                eventName: document.getElementById("eventName").value,
-                desc: document.getElementById("taskDesc").value.trim(),
-                inst: document.getElementById("instSelect").value,
-                medium: document.getElementById("mediumSelect").value,
-                type: document.getElementById("typeSelect").value,
-                status: document.getElementById("statusSelect").value,
-                driveLink: document.getElementById("driveLink").value,
-                approver: document.getElementById("approverName").value,
-            };
+            const now = new Date();
+            const timeStr = now.toLocaleString();
+            const dateShort = formatDateShort(now);
 
             if (id) {
                 const idx = projects.findIndex(p => p.id === id);
-                projectData.history = projects[idx].history;
-                projectData.history.push({ timestamp: now, text: "Project details updated." });
-                projects[idx] = projectData;
+                const existing = projects[idx];
+                
+                existing.eventName = document.getElementById("eventName").value;
+                existing.desc = document.getElementById("taskDesc").value.trim();
+                existing.inst = document.getElementById("instSelect").value;
+                existing.medium = document.getElementById("mediumSelect").value;
+                existing.type = document.getElementById("typeSelect").value;
+                existing.status = document.getElementById("statusSelect").value;
+                existing.driveLink = document.getElementById("driveLink").value;
+                existing.approver = document.getElementById("approverName").value;
+                existing.lastUpdated = dateShort;
+
+                existing.history.push({ timestamp: timeStr, text: "Project details updated." });
             } else {
-                projectData.history = [{ timestamp: now, text: `Project created with status ${projectData.status}` }];
-                projects.push(projectData);
+                const newProject = {
+                    id: Date.now().toString(),
+                    eventName: document.getElementById("eventName").value,
+                    desc: document.getElementById("taskDesc").value.trim(),
+                    inst: document.getElementById("instSelect").value,
+                    medium: document.getElementById("mediumSelect").value,
+                    type: document.getElementById("typeSelect").value,
+                    status: document.getElementById("statusSelect").value,
+                    driveLink: document.getElementById("driveLink").value,
+                    approver: document.getElementById("approverName").value,
+                    createdDate: dateShort,
+                    lastUpdated: dateShort,
+                    history: [{ timestamp: timeStr, text: `Project created with status ${document.getElementById("statusSelect").value}` }]
+                };
+                projects.push(newProject);
             }
 
             closeModal();
@@ -659,9 +729,11 @@
         async function quickUpdateStatus(id, newStatus) {
             const p = projects.find(item => item.id === id);
             if (p && p.status !== newStatus) {
+                const now = new Date();
                 p.status = newStatus;
+                p.lastUpdated = formatDateShort(now);
                 p.history.push({ 
-                    timestamp: new Date().toLocaleString(), 
+                    timestamp: now.toLocaleString(), 
                     text: `Status changed to ${newStatus}` 
                 });
                 updateCounters();
@@ -674,9 +746,9 @@
 
         function exportCSV() {
             if(projects.length === 0) { alert("No data to export!"); return; }
-            let csv = "ID,Event Name,Institution,Medium,Type,Status,Drive Link,Approver,Description\n";
+            let csv = "ID,Event Name,Institution,Medium,Type,Status,Drive Link,Approver,Description,Created Date,Last Updated\n";
             projects.forEach(p => {
-                csv += `"${p.id}","${p.eventName}","${p.inst}","${p.medium}","${p.type}","${p.status}","${p.driveLink || ''}","${p.approver || ''}","${p.desc || ''}"\n`;
+                csv += `"${p.id}","${p.eventName}","${p.inst}","${p.medium}","${p.type}","${p.status}","${p.driveLink || ''}","${p.approver || ''}","${p.desc || ''}","${p.createdDate || ''}","${p.lastUpdated || ''}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
