@@ -175,11 +175,16 @@
             cursor: pointer;
         }
 
+        /* Status Badge Colors */
         .status-DOING { background-color: #17a2b8; }
         .status-WAITING { background-color: #fd7e14; }
         .status-CORRECTIONS { background-color: #dc3545; }
         .status-APPROVED { background-color: #28a745; }
         .status-POSTED { background-color: #6f42c1; }
+        .status-SHOOTING { background-color: #007bff; }
+        .status-SHOOTED { background-color: #20c997; }
+        .status-REJECTED { background-color: #6c757d; }
+        .status-ON_HOLD { background-color: #e83e8c; }
 
         .history-box {
             max-height: 100px;
@@ -240,7 +245,7 @@
         </div>
     </div>
 
-    <!-- Status Counter Cards (KPIs) -->
+    <!-- Status Counter Cards (KPIs) - Remained unchanged -->
     <div class="kpi-grid">
         <div class="kpi-card card-total" onclick="filterByCard('')">
             <div class="kpi-title">Total Projects</div>
@@ -291,6 +296,10 @@
                 <option value="CORRECTIONS">Corrections Needed</option>
                 <option value="APPROVED">Approved</option>
                 <option value="POSTED">Posted</option>
+                <option value="SHOOTING">Shooting</option>
+                <option value="SHOOTED">Shooted</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="ON_HOLD">On Hold</option>
             </select>
         </div>
     </div>
@@ -347,6 +356,10 @@
                             <option value="CORRECTIONS">Corrections Needed</option>
                             <option value="APPROVED">Approved</option>
                             <option value="POSTED">Posted</option>
+                            <option value="SHOOTING">Shooting</option>
+                            <option value="SHOOTED">Shooted</option>
+                            <option value="REJECTED">Rejected</option>
+                            <option value="ON_HOLD">On Hold</option>
                         </select>
                     </div>
                     <div class="filter-group full-width">
@@ -413,6 +426,10 @@
         function normalizeStatus(val) {
             if (!val) return "DOING";
             val = String(val).trim().toUpperCase();
+            if (val.includes("SHOOTING")) return "SHOOTING";
+            if (val.includes("SHOOTED")) return "SHOOTED";
+            if (val.includes("REJECT")) return "REJECTED";
+            if (val.includes("HOLD")) return "ON_HOLD";
             if (val.includes("WAIT")) return "WAITING";
             if (val.includes("CORRECT")) return "CORRECTIONS";
             if (val.includes("APPROV")) return "APPROVED";
@@ -546,6 +563,10 @@
                             <option value="CORRECTIONS" ${p.status === 'CORRECTIONS' ? 'selected' : ''}>CORRECTIONS</option>
                             <option value="APPROVED" ${p.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
                             <option value="POSTED" ${p.status === 'POSTED' ? 'selected' : ''}>POSTED</option>
+                            <option value="SHOOTING" ${p.status === 'SHOOTING' ? 'selected' : ''}>SHOOTING</option>
+                            <option value="SHOOTED" ${p.status === 'SHOOTED' ? 'selected' : ''}>SHOOTED</option>
+                            <option value="REJECTED" ${p.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
+                            <option value="ON_HOLD" ${p.status === 'ON_HOLD' ? 'selected' : ''}>ON HOLD</option>
                         </select>
                     </td>
                     <td>
