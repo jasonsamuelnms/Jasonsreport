@@ -283,7 +283,7 @@
         </div>
 
         <div class="filter-group">
-            <label>📌 Lifecycle Status</label>
+            <label>📌 Status</label>
             <select id="filterStatus" onchange="renderDashboard()">
                 <option value="">All Statuses</option>
                 <option value="DOING">Doing</option>
@@ -301,7 +301,7 @@
             <thead>
                 <tr>
                     <th style="width: 25%;">Project Name & Info</th>
-                    <th style="width: 18%;">Lifecycle Status</th>
+                    <th style="width: 18%;">Status</th>
                     <th style="width: 22%;">Final Drive Link & Spec</th>
                     <th style="width: 15%;">Approver</th>
                     <th style="width: 20%;">Revision History Logs</th>
@@ -421,6 +421,18 @@
             return val;
         }
 
+        function getLatestTimestamp(p) {
+            if (p.history && p.history.length > 0) {
+                const lastLog = p.history[p.history.length - 1];
+                if (lastLog && lastLog.timestamp) {
+                    const parsed = Date.parse(lastLog.timestamp);
+                    if (!isNaN(parsed)) return parsed;
+                }
+            }
+            const numericId = Number(p.id);
+            return !isNaN(numericId) ? numericId : 0;
+        }
+
         async function fetchFromSheet() {
             setStatus("🔄 Syncing...");
             try {
@@ -495,7 +507,10 @@
             const instFilter = document.getElementById("filterInst").value;
             const statusFilter = document.getElementById("filterStatus").value;
 
-            const filtered = projects.filter(p => {
+            // Sort by newest activity first
+            const sortedProjects = [...projects].sort((a, b) => getLatestTimestamp(b) - getLatestTimestamp(a));
+
+            const filtered = sortedProjects.filter(p => {
                 const matchesSearch = p.eventName.toLowerCase().includes(search) || 
                                       (p.approver && p.approver.toLowerCase().includes(search)) ||
                                       (p.driveLink && p.driveLink.toLowerCase().includes(search));
