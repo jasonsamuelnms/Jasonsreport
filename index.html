@@ -3,199 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jasons Dashboard</title>
+    <title>NMS Schools Group - Task Dashboard</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --primary: #0f4c81;
-            --border: #111;
-            --bg-light: #f4f6f8;
-            --accent-green: #28a745;
-            --accent-red: #dc3545;
+            --border: #1e293b;
         }
 
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { margin: 0; padding: 20px; background-color: #fafafa; color: #222; }
-
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .dashboard-header h1 {
-            margin: 0;
-            font-size: 26px;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-
-        .dashboard-header p { margin: 4px 0 0 0; font-size: 11px; font-weight: bold; color: #555; }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 8px 14px;
-            font-weight: bold;
-            font-size: 13px;
-            border: 2px solid var(--border);
-            border-radius: 4px;
-            cursor: pointer;
-            box-shadow: 2px 2px 0px var(--border);
-            transition: all 0.1s ease;
-        }
-
-        .btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0px var(--border); }
-        .btn-green { background-color: var(--accent-green); color: white; }
-        .btn-blue { background-color: var(--primary); color: white; }
-        .btn-yellow { background-color: #ffc107; color: #111; }
-
-        .sync-status {
-            font-size: 12px;
-            font-weight: bold;
-            padding: 4px 8px;
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            background: #fff;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .kpi-card {
-            background: white;
-            border: 2px solid var(--border);
-            padding: 12px;
-            border-radius: 4px;
-            box-shadow: 3px 3px 0px var(--border);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .kpi-card:hover { transform: translateY(-2px); }
-
-        .kpi-title {
-            font-size: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #666;
-            margin-bottom: 4px;
-        }
-
-        .kpi-value {
-            font-size: 24px;
-            font-weight: 900;
-            color: #111;
-        }
-
-        .card-total { border-top: 5px solid #0f4c81; }
-        .card-doing { border-top: 5px solid #17a2b8; }
-        .card-waiting { border-top: 5px solid #fd7e14; }
-        .card-corrections { border-top: 5px solid #dc3545; }
-        .card-approved { border-top: 5px solid #28a745; }
-        .card-posted { border-top: 5px solid #6f42c1; }
-
-        .controls-card {
-            background: #fff;
-            border: 2px solid var(--border);
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px; }
-        .filter-group label { font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        
-        input[type="text"], input[type="url"], select {
-            padding: 8px;
-            border: 2px solid var(--border);
-            font-weight: 600;
-            font-size: 13px;
-            border-radius: 2px;
-            width: 100%;
-        }
-
-        .table-container { overflow-x: auto; border: 2px solid var(--border); background: white; }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            font-size: 13px;
-            min-width: 850px;
-        }
-
-        th {
-            background-color: var(--primary);
-            color: white;
-            text-align: left;
-            padding: 10px;
-            border: 1px solid var(--border);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 12px 10px;
-            border: 1px solid var(--border);
-            vertical-align: top;
-        }
-
-        .tag-group { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-        .tag {
-            font-size: 10px;
-            font-weight: bold;
-            padding: 2px 6px;
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            text-transform: uppercase;
-        }
-        .tag-inst { background: #e3f2fd; color: #0d47a1; }
-        .tag-medium { background: #e8f5e9; color: #1b5e20; }
-        .tag-type { background: #fbe9e7; color: #bf360c; }
-
-        .project-desc {
-            font-size: 11px;
-            color: #555;
-            margin-top: 6px;
-            line-height: 1.3;
-            font-style: italic;
-            word-wrap: break-word;
-        }
-
+        /* Status Badge Styling */
         .status-badge {
             display: inline-block;
             padding: 6px 10px;
-            font-weight: bold;
+            font-weight: 700;
             font-size: 11px;
             color: white;
             border: 2px solid var(--border);
             box-shadow: 2px 2px 0px var(--border);
             text-transform: uppercase;
             text-align: center;
-            cursor: pointer;
             width: 100%;
+            border-radius: 4px;
         }
 
-        /* Status Badge Colors */
+        .status-badge-readonly {
+            display: block;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 11px;
+            color: white;
+            border: 2px solid var(--border);
+            box-shadow: 2px 2px 0px var(--border);
+            text-transform: uppercase;
+            text-align: center;
+            border-radius: 4px;
+        }
+
         .status-DOING { background-color: #17a2b8; }
         .status-WAITING { background-color: #fd7e14; }
         .status-CORRECTIONS { background-color: #dc3545; }
@@ -209,239 +53,238 @@
         /* Compact Single Line Date Bar */
         .status-date-meta {
             margin-top: 6px;
-            font-size: 9.5px;
+            font-size: 10px;
             font-weight: 700;
-            color: #333;
-            background: #eef2f5;
+            color: #334155;
+            background: #f1f5f9;
             padding: 3px 6px;
-            border: 1px solid #bdc3c7;
-            border-radius: 3px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
             text-align: center;
             white-space: nowrap;
-            letter-spacing: 0.2px;
-        }
-        .date-divider {
-            color: #888;
-            margin: 0 4px;
-            font-weight: normal;
         }
 
         .history-box {
             max-height: 100px;
             overflow-y: auto;
-            background: #f8f9fa;
-            border: 1px solid #ccc;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
             padding: 6px;
             font-size: 11px;
-            line-height: 1.4;
+            border-radius: 4px;
         }
-        .history-item { margin-bottom: 4px; border-bottom: 1px dashed #ddd; padding-bottom: 2px; }
-        .history-time { font-weight: bold; color: #555; }
+        .history-item { margin-bottom: 4px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; }
+        .history-time { font-weight: bold; color: #64748b; }
 
-        .drive-link {
-            display: inline-block;
-            margin-top: 6px;
-            color: #0d6efd;
-            font-weight: bold;
-            text-decoration: none;
-            font-size: 12px;
-        }
-        .drive-link:hover { text-decoration: underline; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 10px;
-        }
-        .modal-content {
-            background: white;
-            border: 3px solid var(--border);
-            padding: 20px;
-            width: 100%;
-            max-width: 550px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 6px 6px 0px var(--border);
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .modal-header h2 { margin: 0; font-size: 18px; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .full-width { grid-column: span 2; }
-
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .dashboard-header h1 { font-size: 20px; }
-            .form-grid { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 480px) {
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            .filter-group { min-width: 100%; }
-        }
+        /* Admin Controls Visibility */
+        .admin-only { display: none; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
 
-    <div class="dashboard-header">
-        <div>
-            <h1>📋 JASONS DASHBOARD</h1>
-            <p>REAL-TIME GOOGLE SHEETS INTEGRATED ENGINE</p>
-        </div>
-        <div class="header-actions">
-            <span id="syncStatus" class="sync-status">🔄 Connecting...</span>
-            <button class="btn btn-green" onclick="exportCSV()">📥 Export CSV</button>
-            <button class="btn btn-blue" onclick="openModal()">➕ New Project</button>
-        </div>
-    </div>
-
-    <!-- Status Counter Cards (KPIs) -->
-    <div class="kpi-grid">
-        <div class="kpi-card card-total" onclick="filterByCard('')">
-            <div class="kpi-title">Total Projects</div>
-            <div class="kpi-value" id="countTotal">0</div>
-        </div>
-        <div class="kpi-card card-doing" onclick="filterByCard('DOING')">
-            <div class="kpi-title">Doing</div>
-            <div class="kpi-value" id="countDoing">0</div>
-        </div>
-        <div class="kpi-card card-waiting" onclick="filterByCard('WAITING')">
-            <div class="kpi-title">Waiting Approval</div>
-            <div class="kpi-value" id="countWaiting">0</div>
-        </div>
-        <div class="kpi-card card-corrections" onclick="filterByCard('CORRECTIONS')">
-            <div class="kpi-title">Corrections</div>
-            <div class="kpi-value" id="countCorrections">0</div>
-        </div>
-        <div class="kpi-card card-approved" onclick="filterByCard('APPROVED')">
-            <div class="kpi-title">Approved</div>
-            <div class="kpi-value" id="countApproved">0</div>
-        </div>
-        <div class="kpi-card card-posted" onclick="filterByCard('POSTED')">
-            <div class="kpi-title">Posted</div>
-            <div class="kpi-value" id="countPosted">0</div>
-        </div>
-    </div>
-
-    <!-- Controls Section -->
-    <div class="controls-card">
-        <div class="filter-group" style="flex: 2;">
-            <label>🔍 Search Projects / Months (e.g. June, July, 06-JUN-26)</label>
-            <input type="text" id="searchInput" placeholder="Search by Event, Description, Approver, Month (June, July)..." oninput="renderDashboard()">
-        </div>
+    <!-- ================= LANDING / AUTH GATE ================= -->
+    <div id="authGate" class="min-h-screen flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden bg-slate-50">
         
-        <div class="filter-group">
-            <label>🏫 Institution / School</label>
-            <select id="filterInst" onchange="renderDashboard()">
-                <option value="">All Institutions</option>
-            </select>
-        </div>
+        <!-- Abstract Subtle Background Accents -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-blue-100/50 to-slate-200/50 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-10 right-10 w-72 h-72 bg-slate-200/50 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div class="filter-group">
-            <label>📌 Status</label>
-            <select id="filterStatus" onchange="renderDashboard()">
-                <option value="">All Statuses</option>
-                <option value="DOING">Doing</option>
-                <option value="WAITING">Waiting for Approval</option>
-                <option value="CORRECTIONS">Corrections Needed</option>
-                <option value="APPROVED">Approved</option>
-                <option value="POSTED">Posted</option>
-                <option value="SHOOTING">Shooting</option>
-                <option value="SHOOTED">Shooted</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="ON_HOLD">On Hold</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- Main Data Table -->
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Project Name & Info</th>
-                    <th style="width: 20%;">Status & Dates</th>
-                    <th style="width: 20%;">Final Drive Link & Spec</th>
-                    <th style="width: 15%;">Approver</th>
-                    <th style="width: 20%;">Revision History Logs</th>
-                </tr>
-            </thead>
-            <tbody id="dashboardTable">
-                <tr><td colspan="5" style="text-align:center; padding:20px;">Loading projects from Google Sheets...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Add/Edit Project Modal -->
-    <div class="modal" id="projectModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Create New Project</h2>
-                <button class="btn" onclick="closeModal()">X</button>
+        <!-- Central Aesthetic Card -->
+        <div class="relative z-10 max-w-xl w-full text-center flex flex-col items-center">
+            
+            <!-- Logo Container Filled Properly -->
+            <div class="mb-8 bg-white backdrop-blur-md rounded-2xl shadow-sm border border-slate-200/80 w-full h-48 md:h-56 overflow-hidden p-2 flex items-center justify-center">
+                <img 
+                    src="NMS SCHOOLS group.png" 
+                    alt="NMS Schools Group Logo" 
+                    class="w-full h-full object-contain rounded-xl transition-transform duration-300 hover:scale-105"
+                />
             </div>
-            <form id="projectForm" onsubmit="saveProject(event)">
+
+            <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-wide uppercase mb-2">Task Management Portal</h2>
+            <p class="text-xs md:text-sm text-slate-500 mb-8">Select your access mode to enter the live dashboard</p>
+
+            <!-- Responsive Button Group -->
+            <div class="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button 
+                    onclick="loginAsJason()" 
+                    class="w-full sm:w-1/2 px-6 py-3.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-sm rounded-xl shadow-md border-2 border-slate-900 transition-all duration-200 active:scale-95">
+                    🔐 Login as Jason (Admin)
+                </button>
+                <button 
+                    onclick="enterAsViewer()" 
+                    class="w-full sm:w-1/2 px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm rounded-xl shadow-md border-2 border-slate-900 transition-all duration-200 active:scale-95">
+                    👁️ View Only Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MAIN DASHBOARD CONTENT ================= -->
+    <div id="dashboardContent" class="hidden p-4 md:p-8 max-w-[1600px] mx-auto">
+        
+        <!-- Header Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-slate-900 pb-4 mb-6 gap-4">
+            <div class="flex items-center gap-3">
+                <!-- Text-Height Profile Icon (J / V) -->
+                <div id="userProfileIcon" class="h-8 w-8 md:h-9 md:w-9 rounded-full bg-blue-600 text-white font-bold text-base md:text-lg flex items-center justify-center shadow-sm shrink-0 select-none">
+                    J
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold text-blue-900 uppercase tracking-wider leading-none">Jason Dashboard</h1>
+                    <p class="text-[10px] md:text-xs font-semibold text-slate-500 mt-1">REAL-TIME GOOGLE SHEETS API ENGINE</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span id="roleDisplay" class="px-3 py-1 text-xs font-extrabold uppercase border-2 border-slate-900 rounded bg-slate-200">VIEWER</span>
+                <span id="syncStatus" class="px-3 py-1 text-xs font-bold border border-slate-900 rounded bg-white">🔄 Connecting...</span>
+                <button onclick="exportCSV()" class="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white border-2 border-slate-900 rounded shadow hover:bg-emerald-700">📥 Export CSV</button>
+                <button id="btnNewProject" onclick="openModal()" class="admin-only px-3 py-1.5 text-xs font-bold bg-blue-600 text-white border-2 border-slate-900 rounded shadow hover:bg-blue-700">➕ New Project</button>
+                <button onclick="switchRole()" class="px-3 py-1.5 text-xs font-bold bg-amber-400 text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-amber-500">🔄 Switch Role</button>
+            </div>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div onclick="filterByCard('')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-blue-900 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Total Projects</div>
+                <div class="text-2xl font-black text-slate-900" id="countTotal">0</div>
+            </div>
+            <div onclick="filterByCard('DOING')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-cyan-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Doing</div>
+                <div class="text-2xl font-black text-slate-900" id="countDoing">0</div>
+            </div>
+            <div onclick="filterByCard('WAITING')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-orange-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Waiting Approval</div>
+                <div class="text-2xl font-black text-slate-900" id="countWaiting">0</div>
+            </div>
+            <div onclick="filterByCard('CORRECTIONS')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-red-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Corrections</div>
+                <div class="text-2xl font-black text-slate-900" id="countCorrections">0</div>
+            </div>
+            <div onclick="filterByCard('APPROVED')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-green-600 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Approved</div>
+                <div class="text-2xl font-black text-slate-900" id="countApproved">0</div>
+            </div>
+            <div onclick="filterByCard('POSTED')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-purple-600 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Posted</div>
+                <div class="text-2xl font-black text-slate-900" id="countPosted">0</div>
+            </div>
+        </div>
+
+        <!-- Controls / Search Bar -->
+        <div class="bg-white border-2 border-slate-900 p-4 rounded mb-6 flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-[240px]">
+                <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">🔍 Search Projects / Months (e.g. June, July, 06-JUN-26)</label>
+                <input type="text" id="searchInput" placeholder="Search by Event, Description, Approver, Month..." oninput="renderDashboard()" class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+            </div>
+            <div class="w-full sm:w-48">
+                <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">🏫 Institution</label>
+                <select id="filterInst" onchange="renderDashboard()" class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                    <option value="">All Institutions</option>
+                </select>
+            </div>
+            <div class="w-full sm:w-48">
+                <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">📌 Status</label>
+                <select id="filterStatus" onchange="renderDashboard()" class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                    <option value="">All Statuses</option>
+                    <option value="DOING">Doing</option>
+                    <option value="WAITING">Waiting for Approval</option>
+                    <option value="CORRECTIONS">Corrections Needed</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="POSTED">Posted</option>
+                    <option value="SHOOTING">Shooting</option>
+                    <option value="SHOOTED">Shooted</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="ON_HOLD">On Hold</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Data Table Container -->
+        <div class="overflow-x-auto border-2 border-slate-900 bg-white rounded">
+            <table class="w-full border-collapse text-left text-sm min-w-[850px]">
+                <thead>
+                    <tr class="bg-blue-900 text-white text-xs uppercase border-b-2 border-slate-900">
+                        <th class="p-3 border-r border-slate-800 w-[25%]">Project Name & Info</th>
+                        <th class="p-3 border-r border-slate-800 w-[20%]">Status & Dates</th>
+                        <th class="p-3 border-r border-slate-800 w-[20%]">Final Drive Link & Spec</th>
+                        <th class="p-3 border-r border-slate-800 w-[15%]">Approver</th>
+                        <th class="p-3 w-[20%]">Revision Logs</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboardTable">
+                    <tr><td colspan="5" class="text-center p-6 text-slate-500 font-semibold">Loading live data from Google Sheets...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Form (Admin Only) -->
+    <div id="projectModal" class="fixed inset-0 bg-slate-900/60 hidden justify-center items-center z-50 p-4">
+        <div class="bg-white border-4 border-slate-900 p-6 rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-2">
+                <h2 id="modalTitle" class="text-lg font-bold text-slate-900">Create New Project</h2>
+                <button onclick="closeModal()" class="text-slate-500 font-bold text-xl hover:text-slate-900">✕</button>
+            </div>
+            <form id="projectForm" onsubmit="saveProject(event)" class="space-y-3">
                 <input type="hidden" id="projectId">
-                <div class="form-grid">
-                    <div class="filter-group full-width">
-                        <label>Event Name / Task Title</label>
-                        <input type="text" id="eventName" required placeholder="e.g. Annual Sports Day Banner">
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Event Name / Task Title</label>
+                    <input type="text" id="eventName" required placeholder="e.g. Sports Day Social Post" class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Short Description (Optional)</label>
+                    <input type="text" id="taskDesc" maxlength="100" placeholder="e.g. Needs high-res graphics..." class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Institution</label>
+                        <select id="instSelect" required class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm"></select>
                     </div>
-                    <div class="filter-group full-width">
-                        <label>Short Description (Optional, max 100 chars)</label>
-                        <input type="text" id="taskDesc" maxlength="100" placeholder="e.g. Needs high-res graphics and blue theme...">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Medium</label>
+                        <select id="mediumSelect" required class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm"></select>
                     </div>
-                    <div class="filter-group">
-                        <label>Institution / School</label>
-                        <select id="instSelect" required></select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Medium</label>
-                        <select id="mediumSelect" required></select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Post Type</label>
-                        <select id="typeSelect" required></select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Status</label>
-                        <select id="statusSelect" required>
-                            <option value="DOING">Doing</option>
-                            <option value="WAITING">Waiting for Approval</option>
-                            <option value="CORRECTIONS">Corrections Needed</option>
-                            <option value="APPROVED">Approved</option>
-                            <option value="POSTED">Posted</option>
-                            <option value="SHOOTING">Shooting</option>
-                            <option value="SHOOTED">Shooted</option>
-                            <option value="REJECTED">Rejected</option>
-                            <option value="ON_HOLD">On Hold</option>
-                        </select>
-                    </div>
-                    <div class="filter-group full-width">
-                        <label>Final Approved File / Folder (Google Drive Link)</label>
-                        <input type="url" id="driveLink" placeholder="https://drive.google.com/drive/folders/...">
-                    </div>
-                    <div class="filter-group full-width">
-                        <label>Final Approver Name</label>
-                        <input type="text" id="approverName" placeholder="e.g. Principal / Marketing Lead">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Type</label>
+                        <select id="typeSelect" required class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm"></select>
                     </div>
                 </div>
-                <div style="margin-top: 15px; text-align: right;">
-                    <button type="button" class="btn btn-yellow" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-green">Save Project</button>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Status</label>
+                    <select id="statusSelect" required class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                        <option value="DOING">Doing</option>
+                        <option value="WAITING">Waiting for Approval</option>
+                        <option value="CORRECTIONS">Corrections Needed</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="POSTED">Posted</option>
+                        <option value="SHOOTING">Shooting</option>
+                        <option value="SHOOTED">Shooted</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="ON_HOLD">On Hold</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Google Drive Link</label>
+                    <input type="url" id="driveLink" placeholder="https://drive.google.com/..." class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase mb-1">Approver Name</label>
+                    <input type="text" id="approverName" placeholder="e.g. Principal / Lead" class="w-full p-2 border-2 border-slate-900 rounded font-semibold text-sm">
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-bold bg-slate-200 border-2 border-slate-900 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold bg-emerald-600 text-white border-2 border-slate-900 rounded">Save Project</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Script Section -->
     <script>
-        // Updated with your active live deployment URL
         const API_URL = "https://script.google.com/macros/s/AKfycbzp8G0XhokdAVjFNxQqySAZGKRLjGO6l22ZROlcabfRqMBdCRsbSdbSKlj3dx6m29DfpQ/exec";
+        const ADMIN_PASSWORD = "Reset@13579";
 
         const INSTITUTIONS = ["MAT", "CBSE", "KPT", "UDT", "ORICBE", "ORIKOT", "NIK", "KINCBE", "KINUDT", "KINGHA", "KINRSP", "GRP", "QLA", "129", "Misc"];
         const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
@@ -455,11 +298,75 @@
         };
 
         let projects = [];
+        let isAdmin = false;
+
+        // Session Handling
+        function checkSession() {
+            const storedRole = sessionStorage.getItem("dashboard_role");
+            if (storedRole === "ADMIN") {
+                isAdmin = true;
+                showDashboard();
+            } else if (storedRole === "VIEWER") {
+                isAdmin = false;
+                showDashboard();
+            } else {
+                document.getElementById("authGate").style.display = "flex";
+                document.getElementById("dashboardContent").style.display = "none";
+            }
+        }
+
+        function loginAsJason() {
+            const password = prompt("Enter Jason Password:");
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem("dashboard_role", "ADMIN");
+                isAdmin = true;
+                showDashboard();
+            } else if (password !== null) {
+                alert("❌ Incorrect Password!");
+            }
+        }
+
+        function enterAsViewer() {
+            sessionStorage.setItem("dashboard_role", "VIEWER");
+            isAdmin = false;
+            showDashboard();
+        }
+
+        function switchRole() {
+            sessionStorage.removeItem("dashboard_role");
+            location.reload();
+        }
+
+        function showDashboard() {
+            document.getElementById("authGate").style.display = "none";
+            document.getElementById("dashboardContent").style.display = "block";
+
+            const roleBadge = document.getElementById("roleDisplay");
+            const profileIcon = document.getElementById("userProfileIcon");
+            const adminElements = document.querySelectorAll(".admin-only");
+
+            if (isAdmin) {
+                roleBadge.innerText = "ADMIN (JASON)";
+                roleBadge.className = "px-3 py-1 text-xs font-extrabold uppercase border-2 border-slate-900 rounded bg-green-200 text-green-900";
+                profileIcon.innerText = "J";
+                profileIcon.className = "h-8 w-8 md:h-9 md:w-9 rounded-full bg-blue-600 text-white font-bold text-base md:text-lg flex items-center justify-center shadow-sm shrink-0 select-none";
+                adminElements.forEach(el => el.style.display = "inline-block");
+            } else {
+                roleBadge.innerText = "VIEW ONLY";
+                roleBadge.className = "px-3 py-1 text-xs font-extrabold uppercase border-2 border-slate-900 rounded bg-slate-200 text-slate-800";
+                profileIcon.innerText = "V";
+                profileIcon.className = "h-8 w-8 md:h-9 md:w-9 rounded-full bg-slate-600 text-white font-bold text-base md:text-lg flex items-center justify-center shadow-sm shrink-0 select-none";
+                adminElements.forEach(el => el.style.display = "none");
+            }
+
+            initSelectOptions();
+            fetchFromSheet();
+        }
 
         function setStatus(msg, isError = false) {
             const el = document.getElementById("syncStatus");
             el.innerText = msg;
-            el.style.color = isError ? "red" : "green";
+            el.style.color = isError ? "red" : "black";
         }
 
         function initSelectOptions() {
@@ -488,7 +395,6 @@
 
         function getFullSearchString(p) {
             let str = `${p.eventName} ${p.desc} ${p.approver} ${p.createdDate} ${p.lastUpdated} ${p.inst} ${p.medium} ${p.type} ${p.status}`.toLowerCase();
-            
             const dateObj = new Date(p.createdDate);
             if (!isNaN(dateObj.getTime())) {
                 const monthKey = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -556,8 +462,6 @@
                     }
 
                     const rawStatus = row["Status"] || row["status"] || row["STATUS"] || "DOING";
-
-                    // Fallback to backfill missing dates for old data automatically
                     let cDate = row["Created Date"] || row["createdDate"] || "";
                     let uDate = row["Last Updated"] || row["lastUpdated"] || "";
 
@@ -596,8 +500,9 @@
                 updateCounters();
                 renderDashboard();
 
-                // Silently push auto-backfilled dates to sheet so Google Sheet columns K & L are populated permanently
-                pushToSheet(true);
+                if (isAdmin) {
+                    pushToSheet(true);
+                }
             } catch (err) {
                 console.error(err);
                 setStatus("⚠️ Sync Error", true);
@@ -605,6 +510,8 @@
         }
 
         async function pushToSheet(silent = false) {
+            if (!isAdmin) return;
+
             if (!silent) setStatus("⏳ Saving to Sheet...");
             const sheetPayload = projects.map(p => ({
                 "ID": p.id,
@@ -643,7 +550,6 @@
             const instFilter = document.getElementById("filterInst").value;
             const statusFilter = document.getElementById("filterStatus").value;
 
-            // Sort newest activity first
             const sortedProjects = [...projects].sort((a, b) => getLatestTimestamp(b) - getLatestTimestamp(a));
 
             const filtered = sortedProjects.filter(p => {
@@ -655,7 +561,7 @@
             });
 
             if(filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">No matching projects found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6 text-slate-500 font-semibold">No matching projects found.</td></tr>`;
                 return;
             }
 
@@ -664,18 +570,9 @@
                     `<div class="history-item"><span class="history-time">[${h.timestamp}]</span> ${escapeHtml(h.text)}</div>`
                 ).reverse().join('');
 
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>
-                        <strong>${escapeHtml(p.eventName)}</strong>
-                        <div class="tag-group">
-                            <span class="tag tag-inst">${escapeHtml(p.inst)}</span>
-                            <span class="tag tag-medium">${escapeHtml(p.medium)}</span>
-                            <span class="tag tag-type">${escapeHtml(p.type)}</span>
-                        </div>
-                        ${p.desc ? `<div class="project-desc">${escapeHtml(p.desc)}</div>` : ''}
-                    </td>
-                    <td>
+                let statusControlHtml = '';
+                if (isAdmin) {
+                    statusControlHtml = `
                         <select onchange="quickUpdateStatus('${p.id}', this.value)" class="status-badge status-${p.status}">
                             <option value="DOING" ${p.status === 'DOING' ? 'selected' : ''}>DOING</option>
                             <option value="WAITING" ${p.status === 'WAITING' ? 'selected' : ''}>WAITING APPROVAL</option>
@@ -687,22 +584,47 @@
                             <option value="REJECTED" ${p.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
                             <option value="ON_HOLD" ${p.status === 'ON_HOLD' ? 'selected' : ''}>ON HOLD</option>
                         </select>
+                    `;
+                } else {
+                    statusControlHtml = `
+                        <div class="status-badge-readonly status-${p.status}">${p.status.replace('_', ' ')}</div>
+                    `;
+                }
+
+                const editBtnHtml = isAdmin ? `<button onclick="editProject('${p.id}')" class="mt-2 text-[11px] font-bold px-2 py-1 bg-slate-100 border border-slate-900 rounded hover:bg-slate-200">Edit Details</button>` : '';
+
+                const row = document.createElement("tr");
+                row.className = "border-b border-slate-200 hover:bg-slate-50";
+                row.innerHTML = `
+                    <td class="p-3 border-r border-slate-200">
+                        <strong class="text-slate-900 font-bold">${escapeHtml(p.eventName)}</strong>
+                        <div class="flex gap-1 mt-1 flex-wrap">
+                            <span class="text-[10px] font-extrabold px-1.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-300 rounded uppercase">${escapeHtml(p.inst)}</span>
+                            <span class="text-[10px] font-extrabold px-1.5 py-0.5 bg-green-100 text-green-900 border border-green-300 rounded uppercase">${escapeHtml(p.medium)}</span>
+                            <span class="text-[10px] font-extrabold px-1.5 py-0.5 bg-orange-100 text-orange-900 border border-orange-300 rounded uppercase">${escapeHtml(p.type)}</span>
+                        </div>
+                        ${p.desc ? `<div class="text-xs text-slate-500 italic mt-1">${escapeHtml(p.desc)}</div>` : ''}
+                    </td>
+                    <td class="p-3 border-r border-slate-200">
+                        ${statusControlHtml}
                         <div class="status-date-meta">
-                            CRT: ${p.createdDate || 'N/A'}<span class="date-divider">|</span>UPD: ${p.lastUpdated || 'N/A'}
+                            CRT: ${p.createdDate || 'N/A'} <span class="text-slate-400">|</span> UPD: ${p.lastUpdated || 'N/A'}
                         </div>
                     </td>
-                    <td>
-                        ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="drive-link">🔗 Open Google Drive Link</a>` : '<em>No link attached</em>'}
-                        <br><button onclick="editProject('${p.id}')" style="margin-top:8px; font-size:11px;" class="btn">Edit Details</button>
+                    <td class="p-3 border-r border-slate-200">
+                        ${p.driveLink ? `<a href="${p.driveLink}" target="_blank" class="text-blue-600 font-bold hover:underline text-xs block">🔗 Open Drive Link</a>` : '<em class="text-slate-400 text-xs">No link attached</em>'}
+                        ${editBtnHtml}
                     </td>
-                    <td>${p.approver ? escapeHtml(p.approver) : '<em>No approver assigned</em>'}</td>
-                    <td><div class="history-box">${historyHtml || '<em>No records</em>'}</div></td>
+                    <td class="p-3 border-r border-slate-200 text-slate-800">${p.approver ? escapeHtml(p.approver) : '<em class="text-slate-400 text-xs">Unassigned</em>'}</td>
+                    <td class="p-3"><div class="history-box">${historyHtml || '<em class="text-slate-400">No logs</em>'}</div></td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
         function openModal(editId = null) {
+            if (!isAdmin) return;
+
             const modal = document.getElementById("projectModal");
             const form = document.getElementById("projectForm");
             form.reset();
@@ -730,6 +652,8 @@
 
         async function saveProject(e) {
             e.preventDefault();
+            if (!isAdmin) return;
+
             const id = document.getElementById("projectId").value;
             const now = new Date();
             const timeStr = now.toLocaleString();
@@ -775,6 +699,8 @@
         }
 
         async function quickUpdateStatus(id, newStatus) {
+            if (!isAdmin) return;
+
             const p = projects.find(item => item.id === id);
             if (p && p.status !== newStatus) {
                 const now = new Date();
@@ -802,7 +728,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.setAttribute('href', url);
-            a.setAttribute('download', `dashboard_backup.csv`);
+            a.setAttribute('download', `nms_dashboard_export.csv`);
             a.click();
         }
 
@@ -810,8 +736,8 @@
             return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
-        initSelectOptions();
-        fetchFromSheet();
+        // Run check on load
+        checkSession();
     </script>
 </body>
 </html>
