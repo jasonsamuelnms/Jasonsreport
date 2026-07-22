@@ -23,6 +23,8 @@
             border-bottom: 3px solid var(--border);
             padding-bottom: 12px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .dashboard-header h1 {
@@ -34,6 +36,13 @@
         }
 
         .dashboard-header p { margin: 4px 0 0 0; font-size: 11px; font-weight: bold; color: #555; }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
         .btn {
             padding: 8px 14px;
@@ -123,13 +132,14 @@
             width: 100%;
         }
 
-        .table-container { overflow-x: auto; border: 2px solid var(--border); }
+        .table-container { overflow-x: auto; border: 2px solid var(--border); background: white; }
         
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             font-size: 13px;
+            min-width: 850px;
         }
 
         th {
@@ -196,23 +206,24 @@
         .status-REJECTED { background-color: #6c757d; }
         .status-ON_HOLD { background-color: #e83e8c; }
 
-        /* Compact Date Badges under Status */
+        /* Compact Single Line Date Bar */
         .status-date-meta {
             margin-top: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
             font-size: 9.5px;
             font-weight: 700;
-            color: #444;
-            letter-spacing: 0.3px;
-        }
-        .date-chip {
-            background: #eee;
-            padding: 2px 4px;
+            color: #333;
+            background: #eef2f5;
+            padding: 3px 6px;
+            border: 1px solid #bdc3c7;
             border-radius: 3px;
-            border: 1px solid #ccc;
-            display: inline-block;
+            text-align: center;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+        .date-divider {
+            color: #888;
+            margin: 0 4px;
+            font-weight: normal;
         }
 
         .history-box {
@@ -245,6 +256,7 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 10px;
         }
         .modal-content {
             background: white;
@@ -252,12 +264,27 @@
             padding: 20px;
             width: 100%;
             max-width: 550px;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 6px 6px 0px var(--border);
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .modal-header h2 { margin: 0; font-size: 18px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full-width { grid-column: span 2; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .dashboard-header h1 { font-size: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .filter-group { min-width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -267,7 +294,7 @@
             <h1>📋 JASONS DASHBOARD</h1>
             <p>REAL-TIME GOOGLE SHEETS INTEGRATED ENGINE</p>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div class="header-actions">
             <span id="syncStatus" class="sync-status">🔄 Connecting...</span>
             <button class="btn btn-green" onclick="exportCSV()">📥 Export CSV</button>
             <button class="btn btn-blue" onclick="openModal()">➕ New Project</button>
@@ -339,8 +366,8 @@
             <thead>
                 <tr>
                     <th style="width: 25%;">Project Name & Info</th>
-                    <th style="width: 18%;">Status & Dates</th>
-                    <th style="width: 22%;">Final Drive Link & Spec</th>
+                    <th style="width: 20%;">Status & Dates</th>
+                    <th style="width: 20%;">Final Drive Link & Spec</th>
                     <th style="width: 15%;">Approver</th>
                     <th style="width: 20%;">Revision History Logs</th>
                 </tr>
@@ -413,7 +440,8 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwgw8mZUy0tBZJ07Q1v-d62uFlbS4J5lmkt_SX5oXY5Zv_VWSFX17fCiK16kaNIeQM4xw/exec";
+        // Updated with your active live deployment URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbzp8G0XhokdAVjFNxQqySAZGKRLjGO6l22ZROlcabfRqMBdCRsbSdbSKlj3dx6m29DfpQ/exec";
 
         const INSTITUTIONS = ["MAT", "CBSE", "KPT", "UDT", "ORICBE", "ORIKOT", "NIK", "KINCBE", "KINUDT", "KINGHA", "KINRSP", "GRP", "QLA", "129", "Misc"];
         const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
@@ -461,7 +489,6 @@
         function getFullSearchString(p) {
             let str = `${p.eventName} ${p.desc} ${p.approver} ${p.createdDate} ${p.lastUpdated} ${p.inst} ${p.medium} ${p.type} ${p.status}`.toLowerCase();
             
-            // Add full month names if date exists
             const dateObj = new Date(p.createdDate);
             if (!isNaN(dateObj.getTime())) {
                 const monthKey = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -502,13 +529,12 @@
         }
 
         function getLatestTimestamp(p) {
-            if (p.lastUpdated) {
-                const parsed = Date.parse(p.lastUpdated);
-                if (!isNaN(parsed)) return parsed;
-            }
-            if (p.createdDate) {
-                const parsed = Date.parse(p.createdDate);
-                if (!isNaN(parsed)) return parsed;
+            if (p.history && p.history.length > 0) {
+                const lastLog = p.history[p.history.length - 1];
+                if (lastLog && lastLog.timestamp) {
+                    const parsed = Date.parse(lastLog.timestamp);
+                    if (!isNaN(parsed)) return parsed;
+                }
             }
             return Number(p.id) || 0;
         }
@@ -518,7 +544,8 @@
             try {
                 const res = await fetch(API_URL);
                 const data = await res.json();
-                
+                const todayFormatted = formatDateShort(new Date());
+
                 projects = data.map((row, index) => {
                     let historyParsed = [];
                     const rawHist = row.History || row.history;
@@ -529,7 +556,25 @@
                     }
 
                     const rawStatus = row["Status"] || row["status"] || row["STATUS"] || "DOING";
-                    const nowFormatted = formatDateShort(new Date());
+
+                    // Fallback to backfill missing dates for old data automatically
+                    let cDate = row["Created Date"] || row["createdDate"] || "";
+                    let uDate = row["Last Updated"] || row["lastUpdated"] || "";
+
+                    if (!cDate && historyParsed.length > 0 && historyParsed[0].timestamp) {
+                        const parsed = new Date(historyParsed[0].timestamp);
+                        if (!isNaN(parsed.getTime())) cDate = formatDateShort(parsed);
+                    }
+                    if (!cDate) cDate = todayFormatted;
+
+                    if (!uDate && historyParsed.length > 0) {
+                        const last = historyParsed[historyParsed.length - 1];
+                        if (last && last.timestamp) {
+                            const parsed = new Date(last.timestamp);
+                            if (!isNaN(parsed.getTime())) uDate = formatDateShort(parsed);
+                        }
+                    }
+                    if (!uDate) uDate = cDate;
 
                     return {
                         id: String(row["ID"] || row["id"] || (Date.now() + index)),
@@ -541,22 +586,26 @@
                         driveLink: row["Drive Link"] || row["driveLink"] || "",
                         approver: row["Approver"] || row["approver"] || "",
                         desc: row["Description"] || row["description"] || "",
-                        createdDate: row["Created Date"] || row["createdDate"] || nowFormatted,
-                        lastUpdated: row["Last Updated"] || row["lastUpdated"] || nowFormatted,
+                        createdDate: cDate,
+                        lastUpdated: uDate,
                         history: Array.isArray(historyParsed) ? historyParsed : []
                     };
                 });
+
                 setStatus("🟢 Live");
                 updateCounters();
                 renderDashboard();
+
+                // Silently push auto-backfilled dates to sheet so Google Sheet columns K & L are populated permanently
+                pushToSheet(true);
             } catch (err) {
                 console.error(err);
                 setStatus("⚠️ Sync Error", true);
             }
         }
 
-        async function pushToSheet() {
-            setStatus("⏳ Saving to Sheet...");
+        async function pushToSheet(silent = false) {
+            if (!silent) setStatus("⏳ Saving to Sheet...");
             const sheetPayload = projects.map(p => ({
                 "ID": p.id,
                 "Event Name": p.eventName,
@@ -579,10 +628,10 @@
                     headers: { "Content-Type": "text/plain" },
                     body: JSON.stringify(sheetPayload)
                 });
-                setStatus("🟢 Saved Live");
+                if (!silent) setStatus("🟢 Saved Live");
             } catch (err) {
                 console.error(err);
-                setStatus("⚠️ Save Failed", true);
+                if (!silent) setStatus("⚠️ Save Failed", true);
             }
         }
 
@@ -594,7 +643,7 @@
             const instFilter = document.getElementById("filterInst").value;
             const statusFilter = document.getElementById("filterStatus").value;
 
-            // Sort by newest update first
+            // Sort newest activity first
             const sortedProjects = [...projects].sort((a, b) => getLatestTimestamp(b) - getLatestTimestamp(a));
 
             const filtered = sortedProjects.filter(p => {
@@ -639,8 +688,7 @@
                             <option value="ON_HOLD" ${p.status === 'ON_HOLD' ? 'selected' : ''}>ON HOLD</option>
                         </select>
                         <div class="status-date-meta">
-                            <span class="date-chip">CRT: ${p.createdDate || 'N/A'}</span>
-                            <span class="date-chip">UPD: ${p.lastUpdated || 'N/A'}</span>
+                            CRT: ${p.createdDate || 'N/A'}<span class="date-divider">|</span>UPD: ${p.lastUpdated || 'N/A'}
                         </div>
                     </td>
                     <td>
