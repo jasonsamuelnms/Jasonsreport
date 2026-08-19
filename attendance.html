@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NMS Schools Group - Attendance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #0f4c81; --border: #1e293b; }
+
+        /* ===== CALENDAR GRID (7 columns) ===== */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            padding: 8px;
+        }
+        #calendarGrid {
+            display: contents;
+        }
+        /* ===== DAY TYPE BACKGROUNDS ===== */
+        .date-square.day-sunday { background: #fbf5f5; }
+        .date-square.day-sunday .day-number { color: #b91c1c; }
+        .date-square.day-other-saturday { background: #f4f8fc; }
+        .date-square.day-other-saturday .day-number { color: #1e5a8a; }
+        .date-square.day-second-saturday,
+        .date-square.day-fourth-saturday { background: #fbf7f0; }
+        .date-square.day-second-saturday .day-number,
+        .date-square.day-fourth-saturday .day-number { color: #9a6700; }
+
+        /* ===== DATE CARD - premium dashboard cell ===== */
+        .date-square {
+            aspect-ratio: 1 / 1;
+            min-width: 44px;
+            min-height: 44px;
+            max-width: 92px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 6px 4px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            color: #334155;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .date-square:hover {
+            transform: translateY(-2px);
+            border-color: #94a3b8;
+            background: #f8fafc;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.09);
+        }
+
+        /* Selected state */
+        .date-square.selected {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: #fff !important;
+            box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.18), 0 4px 12px rgba(15, 76, 129, 0.25) !important;
+        }
+        .date-square.selected .day-number { color: #fff !important; }
+        .date-square.selected .day-badge { background: #fff !important; }
+
+        /* Today */
+        .date-square.today:not(.selected) {
+            border-color: var(--primary);
+            border-width: 2px;
+        }
+
+        /* Date number - primary element */
+        .date-square .day-number {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1;
+            color: #1e293b;
+        }
+
+        /* Status indicators - subtle dots (text hidden) */
+        .date-square .day-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 7px;
+            height: 7px;
+            padding: 0;
+            font-size: 0;
+            line-height: 1;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .date-square .day-detail {
+            position: absolute;
+            bottom: 5px;
+            left: 3px;
+            right: 3px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            text-align: center;
+            font-size: 8px;
+            line-height: 1;
+            font-weight: 700;
+            color: #475569;
+        }
+        .date-square.selected .day-detail { color: #fff; }
+        .badge-sunday { background: #ef4444; }
+        .badge-second-sat, .badge-fourth-sat { background: #f59e0b; }
+        .badge-present { background: #16a34a; }
+        .badge-halfday { background: #f59e0b; }
+        .badge-permission { background: #2563eb; }
+        .badge-compoff { background: #8b5cf6; }
+        .badge-holiday { background: #dc2626; }
+        .date-square.has-holiday { background: #fff7ed; }
+
+        /* Empty leading/trailing cells */
+        .date-square.empty {
+            visibility: hidden;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+            cursor: default;
+        }
+
+        /* ===== WEEKDAY HEADERS ===== */
+        .calendar-day-header {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            text-align: center;
+            padding: 10px 4px 8px;
+            color: #64748b;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .calendar-day-header.sun { color: #b91c1c; }
+        .calendar-day-header.sat { color: #1e5a8a; }
+
+        /* ===== MONTH / YEAR CONTROLS ===== */
+        .calendar-nav-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-weight: 600;
+            font-size: 13px;
+            background: #fff;
+            color: #1e293b;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            cursor: pointer;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .calendar-nav-select:hover { border-color: #94a3b8; }
+        .calendar-nav-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.12);
+        }
+
+        /* Prev / Next navigation buttons */
+        button[onclick="prevMonth()"],
+        button[onclick="nextMonth()"] {
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            transition: all 0.15s ease;
+        }
+        button[onclick="prevMonth()"]:hover,
+        button[onclick="nextMonth()"]:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (min-width: 640px) {
+            .date-square { min-width: 52px; min-height: 52px; padding: 8px 4px; }
+            .date-square .day-number { font-size: 20px; }
+            .calendar-day-header { font-size: 12px; padding: 12px 4px 10px; }
+        }
+        @media (min-width: 768px) {
+            .date-square { min-width: 64px; min-height: 64px; }
+            .date-square .day-number { font-size: 22px; }
+        }
+        @media (max-width: 639px) {
+            .calendar-grid { padding: 4px; gap: 2px; }
+            .date-square { min-width: 40px; min-height: 40px; padding: 4px 2px; border-radius: 8px; }
+            .date-square .day-number { font-size: 15px; }
+            .date-square .day-badge { top: 4px; right: 4px; width: 5px; height: 5px; }
+            .date-square .day-detail { bottom: 3px; font-size: 7px; }
+            .calendar-day-header { font-size: 9px; padding: 8px 2px 6px; letter-spacing: 0.3px; }
+        }
+        /* ===== ATTENDANCE ACTION MODAL (TASK 2) ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-card {
+            background: #fff;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .modal-body {
+            padding: 18px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close:hover { color: #1e293b; }
+        .modal-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .action-btn {
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+        .action-btn:hover {
+            background: #f1f5f9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+        .action-btn.selected {
+            background: var(--primary);
+            border-color: #0f2a5a;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(15, 76, 129, 0.2);
+        }
+
+        /* ===== TASK 3 — DYNAMIC ACTION FORMS ===== */
+        .form-hidden { display: none !important; }
+
+        .form-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 14px;
+            color: #1e293b;
+            background: #fff;
+            font-family: inherit;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.12);
+        }
+        .form-input::placeholder { color: #94a3b8; }
+        textarea.form-input { resize: vertical; }
+
+        .btn-primary {
+            padding: 10px 16px;
+            border: 2px solid #0f2a5a;
+            border-radius: 10px;
+            background: var(--primary);
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .btn-primary:hover { background: #0b3a63; }
+
+        .btn-secondary {
+            padding: 10px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .btn-secondary:hover { background: #f1f5f9; }
+
+        .info-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #475569;
+            margin-top: 10px;
+        }
+        .info-panel .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+        }
+        .info-panel .info-row strong { color: #1e293b; }
+
+        .duration-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 12px;
+            background: #eef6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e5a8a;
+        }
+
+        /* ===== CALENDAR PRESENTATION REFRESH — UI ONLY ===== */
+        body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+        .calendar-grid {
+            gap: 3px;
+            padding: 3px;
+            background: #e2e8f0;
+            border: 0 !important;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .calendar-day-header {
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 4px;
+            background: #f8fafc;
+            border: 0;
+            color: #0f172a;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .calendar-day-header.sun { color: #be123c; background: #fff1f2; }
+        .calendar-day-header.sat { color: #9a6700; background: #fffbeb; }
+        .date-square {
+            width: 100%;
+            max-width: none;
+            min-width: 0;
+            min-height: 86px;
+            aspect-ratio: auto;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0;
+            padding: 11px 10px;
+            border: 0;
+            border-radius: 2px;
+            background: #f8fafc;
+            box-shadow: none;
+        }
+        .date-square:hover {
+            transform: none;
+            border-color: transparent;
+            background: #eff6ff;
+            box-shadow: inset 0 0 0 2px #93c5fd;
+        }
+        .date-square .day-number {
+            font-size: 23px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+        .date-square.day-sunday { background: #fff7f7; }
+        .date-square.day-other-saturday { background: #f8fafc; }
+        .date-square.day-second-saturday,
+        .date-square.day-fourth-saturday { background: #fffbeb; }
+        .date-square .day-badge {
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.75);
+        }
+        .date-square .day-detail {
+            bottom: 10px;
+            left: 8px;
+            right: 8px;
+            padding: 6px 5px;
+            border-radius: 5px;
+            background: #dbeafe;
+            color: #1e3a8a;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.15;
+            text-transform: none;
+        }
+        .date-square:has(.badge-present) .day-detail { background: #ccfbf1; color: #115e59; }
+        .date-square:has(.badge-halfday) .day-detail { background: #fef3c7; color: #92400e; }
+        .date-square:has(.badge-permission) .day-detail { background: #dbeafe; color: #1d4ed8; }
+        .date-square:has(.badge-compoff) .day-detail { background: #ede9fe; color: #6d28d9; }
+        .date-square:has(.badge-holiday) .day-detail { background: #fee2e2; color: #b91c1c; }
+        .date-square.selected {
+            box-shadow: inset 0 0 0 3px #0f4c81 !important;
+            background: #eaf4ff !important;
+        }
+        .date-square.selected .day-number { color: #0f4c81 !important; }
+        .date-square.selected .day-detail { color: #1e3a8a !important; }
+        .date-square.today:not(.selected) {
+            border: 0;
+            box-shadow: inset 0 0 0 2px #0f4c81;
+        }
+        @media (min-width: 768px) {
+            .date-square { min-height: 112px; padding: 13px 14px; }
+            .date-square .day-number { font-size: 26px; }
+            .date-square .day-detail { bottom: 12px; left: 12px; right: 12px; font-size: 11px; }
+        }
+        @media (max-width: 639px) {
+            .calendar-grid { gap: 2px; padding: 2px; border-radius: 10px; }
+            .calendar-day-header { min-height: 34px; padding: 4px 1px; font-size: 9px; }
+            .date-square { min-height: 62px; padding: 7px 5px; }
+            .date-square .day-number { font-size: 17px; font-weight: 800; }
+            .date-square .day-badge { top: 7px; right: 6px; width: 5px; height: 5px; box-shadow: none; }
+            .date-square .day-detail { bottom: 6px; left: 4px; right: 4px; padding: 3px 1px; font-size: 7px; }
+        }
+        .attendance-summary-card {
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            padding: 16px;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .attendance-summary-card .summary-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .attendance-summary-card .summary-value {
+            margin-top: 5px;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .attendance-summary-card .summary-note {
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .summary-accent-blue { border-top: 4px solid #2563eb; }
+        .summary-accent-green { border-top: 4px solid #10b981; }
+        .summary-accent-violet { border-top: 4px solid #8b5cf6; }
+        .summary-accent-amber { border-top: 4px solid #f59e0b; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen">
+    <div class="border-b-4 border-slate-900 bg-white px-4 py-2.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+            <div class="h-9 w-9 rounded-full bg-blue-600 text-white font-bold text-lg flex items-center justify-center shadow-sm shrink-0">A</div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-extrabold text-blue-900 uppercase tracking-wider leading-none">Attendance Dashboard</h1>
+                <p class="text-[10px] md:text-xs font-semibold text-slate-500 mt-1">ATTENDANCE TRACKING MODULE</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="index.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📊 Dashboard</a>
+            <a href="attendance.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📋 Attendance</a>
+            <a href="reports.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📊 Reports</a>
+            <a href="index.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">🏠 Home</a>
+        </div>
+    </div>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <div class="p-4">
+        <div class="max-w-[1600px] mx-auto">
+            <!-- ================= CALENDAR SECTION ================= -->
+            <div class="bg-white border-2 border-slate-900 rounded-lg p-4 shadow-lg mb-6">
+                <!-- Calendar Header: Month/Year Navigation -->
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <button onclick="prevMonth()" class="px-3 py-1.5 text-xs font-bold bg-slate-200 text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-300">
+                        ◀ Prev
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <select id="monthSelect" onchange="changeMonth()" class="calendar-nav-select"></select>
+                        <select id="yearSelect" onchange="changeYear()" class="calendar-nav-select"></select>
+                    </div>
+                    <button onclick="nextMonth()" class="px-3 py-1.5 text-xs font-bold bg-slate-200 text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-300">
+                        Next ▶
+                    </button>
+                </div>
+                <!-- Calendar Grid -->
+                <div class="calendar-grid border-2 border-slate-900 rounded overflow-hidden">
+                    <div class="calendar-day-header sun">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header sat">Sat</div>
+                    <div id="calendarGrid" class="contents"></div>
+                </div>
+            </div>
+
+            <section class="mb-6" aria-label="Attendance progress summary">
+                <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-900">Attendance Progress</h2>
+                        <p id="summaryPeriodNote" class="text-xs font-semibold text-slate-500">Through the selected reporting date</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="attendance-summary-card summary-accent-blue">
+                        <div class="summary-label">Working days</div>
+                        <div id="monthWorkingDays" class="summary-value">0</div>
+                        <div class="summary-note">Month to date</div>
+                    </div>
+                    <div class="attendance-summary-card summary-accent-green">
+                        <div class="summary-label">Days worked</div>
+                        <div id="monthDaysWorked" class="summary-value">0</div>
+                        <div class="summary-note">Recorded attendance days</div>
+                    </div>
+                    <div class="attendance-summary-card summary-accent-violet">
+                        <div class="summary-label">Expected hours</div>
+                        <div id="monthExpectedHours" class="summary-value">0h</div>
+                        <div class="summary-note">8 hours per working day</div>
+                    </div>
+                    <div class="attendance-summary-card summary-accent-amber">
+                        <div class="summary-label">Worked hours</div>
+                        <div id="monthWorkedHours" class="summary-value">0h 0m</div>
+                        <div class="summary-note">Logged time to date</div>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2">
+                    <span class="h-px flex-1 bg-slate-200"></span>
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Year to date</span>
+                    <span class="h-px flex-1 bg-slate-200"></span>
+                </div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                    <div class="attendance-summary-card summary-accent-blue"><div class="summary-label">Working days</div><div id="yearWorkingDays" class="summary-value">—</div><div class="summary-note">Year to date</div></div>
+                    <div class="attendance-summary-card summary-accent-green"><div class="summary-label">Days worked</div><div id="yearDaysWorked" class="summary-value">—</div><div class="summary-note">Recorded attendance days</div></div>
+                    <div class="attendance-summary-card summary-accent-violet"><div class="summary-label">Expected hours</div><div id="yearExpectedHours" class="summary-value">—</div><div class="summary-note">8 hours per working day</div></div>
+                    <div class="attendance-summary-card summary-accent-amber"><div class="summary-label">Worked hours</div><div id="yearWorkedHours" class="summary-value">—</div><div class="summary-note">Logged time to date</div></div>
+                </div>
+            </section>
+
+            <section class="mb-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden" aria-label="Calendar settings">
+                <details id="calendarSettingsPanel">
+                    <summary class="cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-extrabold text-slate-900">Manage Calendar Settings</h2>
+                            <p class="text-xs font-semibold text-slate-500 mt-1">Add monthly settings or a Tamil Nadu government holiday.</p>
+                        </div>
+                        <span class="text-xs font-extrabold text-blue-800">Open settings</span>
+                    </summary>
+                    <div class="border-t border-slate-200 p-4 grid lg:grid-cols-2 gap-5">
+                        <form onsubmit="saveMonthlySettingsFromUI(event)" class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+                            <div class="flex items-start justify-between gap-3 mb-4">
+                                <div><h3 class="font-extrabold text-slate-900">Monthly Settings</h3><p class="text-[11px] font-semibold text-slate-500 mt-1">School working days controls the card target.</p></div>
+                                <span id="monthlySettingsPeriod" class="text-[11px] font-extrabold text-blue-800"></span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="text-xs font-bold text-slate-600">Total days<input id="settingTotalDays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Saturdays<input id="settingSaturdays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Sundays<input id="settingSundays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Second Saturdays<input id="settingSecondSaturdays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Fourth Saturdays<input id="settingFourthSaturdays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Govt. holidays<input id="settingGovernmentHolidays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Additional working days<input id="settingAdditionalWorkingDays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="text-xs font-bold text-slate-600">Comp. holidays<input id="settingCompensatoryHolidays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                                <label class="col-span-2 text-xs font-bold text-slate-700">School working days<input id="settingSchoolWorkingDays" type="number" min="0" class="form-input mt-1 w-full" required></label>
+                            </div>
+                            <button type="submit" class="btn-primary mt-4 w-full">Save Monthly Settings</button>
+                            <p id="monthlySettingsFeedback" class="text-xs font-bold text-center mt-3 min-h-[16px]"></p>
+                        </form>
+                        <form onsubmit="saveHolidayFromUI(event)" class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+                            <h3 class="font-extrabold text-slate-900">Government Holiday</h3>
+                            <p class="text-[11px] font-semibold text-slate-500 mt-1 mb-4">This marks the selected date as a holiday on the calendar.</p>
+                            <label class="block text-xs font-bold text-slate-600">Holiday date<input id="holidayEntryDate" type="date" class="form-input mt-1 w-full" required></label>
+                            <label class="block text-xs font-bold text-slate-600 mt-3">Holiday name<input id="holidayEntryName" type="text" maxlength="100" placeholder="e.g. Pongal" class="form-input mt-1 w-full" required></label>
+                            <button type="submit" class="btn-primary mt-4 w-full">Add Government Holiday</button>
+                            <p id="holidayEntryFeedback" class="text-xs font-bold text-center mt-3 min-h-[16px]"></p>
+                        </form>
+                    </div>
+                </details>
+            </section>
+        </div>
+    </div>
+    <!-- ================= ATTENDANCE ACTION MODAL (TASK 2) ================= -->
+    <div id="attendanceModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 class="text-lg font-bold text-slate-900">Attendance Action</h2>
+                <button type="button" onclick="closeAttendanceModal()" class="modal-close" aria-label="Close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <div class="modal-label">Selected Date</div>
+                    <div id="modalSelectedDate" class="text-base font-bold text-slate-900">-</div>
+                    <div id="modalDayType" class="text-xs font-semibold text-slate-500 mt-1">-</div>
+                </div>
+
+                <!-- Action selector view -->
+                <div id="modalActionSelector">
+                    <div class="modal-label mb-2">Select Action</div>
+                    <div id="actionButtons" class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="selectAction('login')" data-action="login" class="action-btn">Login</button>
+                        <button type="button" onclick="selectAction('logout')" data-action="logout" class="action-btn">Logout</button>
+                        <button type="button" onclick="selectAction('permission')" data-action="permission" class="action-btn">Permission</button>
+                        <button type="button" onclick="selectAction('halfday')" data-action="halfday" class="action-btn">Half Day</button>
+                        <button type="button" onclick="selectAction('compoff')" data-action="compoff" class="action-btn col-span-2">Comp-Off</button>
+                    </div>
+                    <div id="modalActionFeedback" class="mt-3 text-sm font-semibold text-slate-600 text-center min-h-[20px]"></div>
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" onclick="closeAttendanceModal()" class="px-4 py-2 text-sm font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic form view (rendered by selectAction) -->
+                <div id="modalFormContainer" class="form-hidden"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        /* ATTENDANCE CALENDAR - TASK 1 OF 10 */
+
+        const START_YEAR = 2024;
+        const END_YEAR   = 2030;
+        const ATTENDANCE_API_URL = 'https://script.google.com/macros/s/AKfycbzOAYOvKlv_O0pnSOAbuDwAJCjbRzmGH14bMsCdv0o7iuNY4g4Zt7WgakK2R8AocHuvPQ/exec';
+        const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+        let calYear      = new Date().getFullYear();
+        let calMonth     = new Date().getMonth();
+        let selectedDate = null;
+        let selectedAction = null;
+        let currentSelectedDate = null;
+        let currentAction = null;
+        // This is a render cache only. Google Sheets remains the source of truth.
+        let attendanceRecords = {};
+        let holidayRecords = {};
+        let compOffRecords = [];
+        let calendarRequestId = 0;
+        let yearlyAttendanceRecords = [];
+        let yearlyHolidayRecords = {};
+        let loadedSummaryYear = null;
+        let monthlySettings = null;
+        let yearlySettingsByMonth = {};
+
+        function getValue(row, names) {
+            if (!row || typeof row !== 'object') return '';
+            const keys = Object.keys(row);
+            for (const name of names) {
+                const key = keys.find(function (k) { return k.toLowerCase().replace(/[ _-]/g, '') === name.toLowerCase().replace(/[ _-]/g, ''); });
+                if (key !== undefined && row[key] !== null && row[key] !== undefined) return row[key];
+            }
+            return '';
+        }
+
+        function normaliseDate(value) {
+            if (!value) return '';
+            if (typeof value === 'string') {
+                const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+                if (match) return match[1];
+                const indian = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if (indian) return indian[3] + '-' + indian[2].padStart(2, '0') + '-' + indian[1].padStart(2, '0');
+            }
+            const parsed = new Date(value);
+            if (isNaN(parsed.getTime())) return '';
+            return parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+        }
+
+        function normaliseTime(value) {
+            if (value === null || value === undefined || value === '') return '';
+            const match = String(value).match(/(\d{1,2}):(\d{2})/);
+            return match ? match[1].padStart(2, '0') + ':' + match[2] : String(value);
+        }
+
+        function responseRows(data, names) {
+            if (Array.isArray(data)) return data;
+            for (const name of names) {
+                if (Array.isArray(data && data[name])) return data[name];
+            }
+            return [];
+        }
+
+        function mergeAttendanceRows(rows) {
+            rows.forEach(function (row) {
+                const date = normaliseDate(getValue(row, ['date', 'attendanceDate', 'logDate', 'Date']));
+                if (!date) return;
+                const record = attendanceRecords[date] || {};
+                const login = normaliseTime(getValue(row, ['loginTime', 'login', 'inTime', 'Login Time']));
+                const logout = normaliseTime(getValue(row, ['logoutTime', 'logout', 'outTime', 'Logout Time']));
+                const permissionStart = normaliseTime(getValue(row, ['permissionStart', 'startTime', 'permissionStartTime']));
+                const permissionEnd = normaliseTime(getValue(row, ['permissionEnd', 'endTime', 'permissionEndTime']));
+                Object.assign(record, {
+                    login: login || record.login,
+                    logout: logout || record.logout,
+                    workedMinutes: Number(getValue(row, ['workedMinutes', 'workMinutes', 'totalMinutes'])) || record.workedMinutes || 0,
+                    permissionStart: permissionStart || record.permissionStart,
+                    permissionEnd: permissionEnd || record.permissionEnd,
+                    permissionMinutes: Number(getValue(row, ['permissionMinutes', 'durationMinutes', 'permissionDuration'])) || record.permissionMinutes || 0,
+                    permissionRemarks: getValue(row, ['permissionRemarks', 'remarks']) || record.permissionRemarks || '',
+                    halfDay: getValue(row, ['halfDay', 'halfDaySession', 'session']) || record.halfDay || '',
+                    halfDayRemarks: getValue(row, ['halfDayRemarks']) || record.halfDayRemarks || '',
+                    late: String(getValue(row, ['late', 'isLate'])).toLowerCase() === 'true' || record.late || false,
+                    lateMinutes: Number(getValue(row, ['lateMinutes', 'lateMin'])) || record.lateMinutes || 0,
+                    status: getValue(row, ['status', 'attendanceStatus']) || record.status || ''
+                });
+                attendanceRecords[date] = record;
+            });
+        }
+
+        function mergeCompOffRows(rows) {
+            compOffRecords = rows.map(function (row) {
+                return {
+                    workedDate: normaliseDate(getValue(row, ['workedDate', 'workDate', 'dateWorked'])),
+                    usedDate: normaliseDate(getValue(row, ['usedDate', 'leaveUsedDate', 'leaveDate', 'dateUsed'])),
+                    remarks: getValue(row, ['remarks', 'remark']) || ''
+                };
+            }).filter(function (row) { return row.workedDate || row.usedDate; });
+        }
+
+        function mergeHolidayRows(rows) {
+            holidayRecords = {};
+            rows.forEach(function (row) {
+                const date = normaliseDate(getValue(row, ['date', 'holidayDate', 'Date']));
+                if (date) holidayRecords[date] = getValue(row, ['name', 'holidayName', 'description', 'remarks']) || 'Holiday';
+            });
+        }
+
+        async function apiRequest(action, payload, method) {
+            const params = new URLSearchParams(Object.assign({ action: action }, payload || {}));
+            const options = { method: method || 'POST', redirect: 'follow' };
+            let url = ATTENDANCE_API_URL;
+            if (options.method === 'GET') url += '?' + params.toString();
+            else {
+                options.headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
+                options.body = params.toString();
+            }
+            const response = await fetch(url, options);
+            const raw = await response.text();
+            let data;
+            try { data = raw ? JSON.parse(raw) : {}; }
+            catch (error) { throw new Error('The attendance service returned an invalid response.'); }
+            if (!response.ok || data.success === false || data.status === 'error' || data.error) {
+                throw new Error(data.message || data.error || 'The attendance service could not complete this request.');
+            }
+            return data;
+        }
+
+        async function loadCalendarData(year, month) {
+            const requestId = ++calendarRequestId;
+            try {
+                const data = await apiRequest('GET_ATTENDANCE_DATA', {
+                    year: year,
+                    month: month + 1,
+                    tabs: 'Attendance_Log,Compensation_Log,Holiday_Settings,TN_Government_Holidays'
+                }, 'GET');
+                if (requestId !== calendarRequestId) return;
+                const result = data.data && !Array.isArray(data.data) ? data.data : data;
+                attendanceRecords = {};
+                mergeAttendanceRows(responseRows(result, ['attendance', 'attendanceLog', 'Attendance_Log', 'records', 'data']));
+                mergeCompOffRows(responseRows(result, ['compensation', 'compOff', 'compensationLog', 'Compensation_Log']));
+                mergeHolidayRows(responseRows(result, ['holidays', 'holidaySettings', 'governmentHolidays', 'Holiday_Settings', 'TN_Government_Holidays']));
+            } catch (error) {
+                console.error('Attendance data load failed:', error);
+                const feedback = document.getElementById('modalActionFeedback');
+                if (feedback && document.getElementById('attendanceModal').classList.contains('open')) feedback.textContent = error.message;
+            } finally {
+                if (requestId === calendarRequestId) renderCalendar(year, month);
+            }
+        }
+
+        function parseAttendanceRows(rows) {
+            return rows.map(function (row) {
+                return {
+                    date: normaliseDate(getValue(row, ['date', 'attendanceDate', 'logDate', 'Date'])),
+                    login: normaliseTime(getValue(row, ['loginTime', 'login', 'inTime', 'Login Time'])),
+                    workedMinutes: Number(getValue(row, ['workedMinutes', 'workMinutes', 'totalMinutes'])) || 0,
+                    present: String(getValue(row, ['present', 'isPresent'])).toLowerCase() === 'true'
+                };
+            }).filter(function (record) { return record.date; });
+        }
+
+        async function loadYearlySummaryData(year) {
+            if (loadedSummaryYear === year) return;
+            try {
+                const responses = await Promise.all([apiRequest('GET_ATTENDANCE_DATA', {
+                    year: year,
+                    tabs: 'Attendance_Log,TN_Government_Holidays'
+                }, 'GET'), apiRequest('GET_YEARLY_SETTINGS', { year: year }, 'GET')]);
+                const data = responses[0];
+                const settingsData = responses[1];
+                const result = data.data && !Array.isArray(data.data) ? data.data : data;
+                yearlyAttendanceRecords = parseAttendanceRows(responseRows(result, ['attendance', 'attendanceLog', 'Attendance_Log', 'records', 'data']));
+                yearlyHolidayRecords = {};
+                responseRows(result, ['holidays', 'governmentHolidays', 'TN_Government_Holidays']).forEach(function (row) {
+                    const date = normaliseDate(getValue(row, ['date', 'holidayDate', 'Date']));
+                    if (date) yearlyHolidayRecords[date] = true;
+                });
+                yearlySettingsByMonth = {};
+                (settingsData.data || settingsData.settings || []).forEach(function (setting) {
+                    yearlySettingsByMonth[year + '-' + Number(setting.month)] = setting;
+                });
+                loadedSummaryYear = year;
+            } catch (error) {
+                console.error('Yearly summary load failed:', error);
+                yearlyAttendanceRecords = [];
+                yearlyHolidayRecords = {};
+                yearlySettingsByMonth = {};
+                loadedSummaryYear = year;
+            }
+            updateSummaryCards();
+        }
+
+        async function loadMonthlySettings(year, month) {
+            try {
+                const data = await apiRequest('GET_MONTHLY_SETTINGS', { year: year, month: month + 1 }, 'GET');
+                monthlySettings = data.data || data.settings || null;
+            } catch (error) {
+                console.error('Monthly settings load failed:', error);
+                monthlySettings = null;
+            }
+            populateMonthlySettingsForm();
+            updateSummaryCards();
+        }
+
+        function getMonthDefaults(year, month) {
+            const days = new Date(year, month + 1, 0).getDate();
+            const saturdays = getSaturdaysInMonth(year, month).length;
+            let sundays = 0;
+            for (let day = 1; day <= days; day++) if (new Date(year, month, day).getDay() === 0) sundays++;
+            const second = saturdays >= 2 ? 1 : 0;
+            const fourth = saturdays >= 4 ? 1 : 0;
+            const holidays = Object.keys(holidayRecords).filter(function (date) { return date.indexOf(year + '-' + String(month + 1).padStart(2, '0')) === 0; }).length;
+            return { year: year, month: month + 1, totalDays: days, saturdays: saturdays, sundays: sundays, secondSaturdays: second, fourthSaturdays: fourth, governmentHolidays: holidays, additionalWorkingDays: 0, compensatoryHolidays: 0, schoolWorkingDays: days - sundays - second - fourth - holidays };
+        }
+
+        function settingValue(key, defaults) {
+            const value = monthlySettings && monthlySettings[key];
+            return value === undefined || value === null || value === '' ? defaults[key] : value;
+        }
+
+        function populateMonthlySettingsForm() {
+            const defaults = getMonthDefaults(calYear, calMonth);
+            const fields = {
+                settingTotalDays: 'totalDays', settingSaturdays: 'saturdays', settingSundays: 'sundays',
+                settingSecondSaturdays: 'secondSaturdays', settingFourthSaturdays: 'fourthSaturdays',
+                settingGovernmentHolidays: 'governmentHolidays', settingAdditionalWorkingDays: 'additionalWorkingDays',
+                settingCompensatoryHolidays: 'compensatoryHolidays', settingSchoolWorkingDays: 'schoolWorkingDays'
+            };
+            Object.keys(fields).forEach(function (id) {
+                const input = document.getElementById(id);
+                if (input) input.value = settingValue(fields[id], defaults);
+            });
+            const period = document.getElementById('monthlySettingsPeriod');
+            if (period) period.textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
+            const holidayDate = document.getElementById('holidayEntryDate');
+            if (holidayDate) holidayDate.value = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-01';
+        }
+
+        async function saveMonthlySettingsFromUI(event) {
+            event.preventDefault();
+            const feedback = document.getElementById('monthlySettingsFeedback');
+            const read = function (id) { return Number(document.getElementById(id).value) || 0; };
+            const payload = {
+                year: calYear, month: calMonth + 1, totalDays: read('settingTotalDays'), saturdays: read('settingSaturdays'), sundays: read('settingSundays'),
+                secondSaturdays: read('settingSecondSaturdays'), fourthSaturdays: read('settingFourthSaturdays'), governmentHolidays: read('settingGovernmentHolidays'),
+                additionalWorkingDays: read('settingAdditionalWorkingDays'), compensatoryHolidays: read('settingCompensatoryHolidays'), schoolWorkingDays: read('settingSchoolWorkingDays')
+            };
+            try {
+                await apiRequest('SAVE_MONTHLY_SETTINGS', payload, 'POST');
+                monthlySettings = payload;
+                feedback.textContent = 'Monthly settings saved.';
+                feedback.className = 'text-xs font-bold text-center mt-3 min-h-[16px] text-emerald-700';
+                updateSummaryCards();
+            } catch (error) {
+                feedback.textContent = error.message;
+                feedback.className = 'text-xs font-bold text-center mt-3 min-h-[16px] text-red-600';
+            }
+        }
+
+        async function saveHolidayFromUI(event) {
+            event.preventDefault();
+            const feedback = document.getElementById('holidayEntryFeedback');
+            const date = document.getElementById('holidayEntryDate').value;
+            const holidayName = document.getElementById('holidayEntryName').value.trim();
+            try {
+                await apiRequest('SAVE_HOLIDAY', { date: date, holidayName: holidayName }, 'POST');
+                holidayRecords[date] = holidayName;
+                feedback.textContent = 'Holiday added.';
+                feedback.className = 'text-xs font-bold text-center mt-3 min-h-[16px] text-emerald-700';
+                document.getElementById('holidayEntryName').value = '';
+                renderCalendar(calYear, calMonth);
+            } catch (error) {
+                feedback.textContent = error.message;
+                feedback.className = 'text-xs font-bold text-center mt-3 min-h-[16px] text-red-600';
+            }
+        }
+
+        function getReportingEnd(year, month) {
+            const today = new Date();
+            const periodEnd = new Date(year, month + 1, 0);
+            if (year > today.getFullYear() || (year === today.getFullYear() && month > today.getMonth())) return null;
+            if (year === today.getFullYear() && month === today.getMonth()) return today;
+            return periodEnd;
+        }
+
+        function isWorkingDate(year, month, day, holidays) {
+            const info = buildDateObject(year, month, day);
+            return !info.isSunday && !info.isSecondSaturday && !info.isFourthSaturday && !holidays[info.date];
+        }
+
+        function calculateAttendanceProgress(year, startMonth, endMonth, records, holidays) {
+            const recordByDate = {};
+            records.forEach(function (record) { recordByDate[record.date] = record; });
+            let workingDays = 0;
+            let daysWorked = 0;
+            let workedMinutes = 0;
+
+            for (let month = startMonth; month <= endMonth; month++) {
+                const end = getReportingEnd(year, month);
+                if (!end) continue;
+                const workingDaysBeforeMonth = workingDays;
+                const lastDay = end.getDate();
+                for (let day = 1; day <= lastDay; day++) {
+                    if (!isWorkingDate(year, month, day, holidays)) continue;
+                    workingDays++;
+                    const date = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                    const record = recordByDate[date];
+                    if (record && (record.login || record.present || record.workedMinutes > 0)) daysWorked++;
+                    if (record) workedMinutes += record.workedMinutes || 0;
+                }
+                const configuredSetting = startMonth === endMonth ? monthlySettings : yearlySettingsByMonth[year + '-' + (month + 1)];
+                if (configuredSetting && Number(configuredSetting.year) === year && Number(configuredSetting.month) === month + 1 && configuredSetting.schoolWorkingDays !== '') {
+                    workingDays = workingDaysBeforeMonth + (Number(configuredSetting.schoolWorkingDays) || 0);
+                }
+            }
+            return { workingDays: workingDays, daysWorked: daysWorked, expectedMinutes: workingDays * 8 * 60, workedMinutes: workedMinutes };
+        }
+
+        function formatSummaryHours(minutes) {
+            const wholeMinutes = Math.round(minutes || 0);
+            return Math.floor(wholeMinutes / 60) + 'h ' + (wholeMinutes % 60) + 'm';
+        }
+
+        function setSummaryValue(id, value) {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        }
+
+        function updateSummaryCards() {
+            const monthData = calculateAttendanceProgress(calYear, calMonth, calMonth,
+                Object.keys(attendanceRecords).map(function (date) { return Object.assign({ date: date }, attendanceRecords[date]); }), holidayRecords);
+            setSummaryValue('monthWorkingDays', monthData.workingDays);
+            setSummaryValue('monthDaysWorked', monthData.daysWorked);
+            setSummaryValue('monthExpectedHours', formatSummaryHours(monthData.expectedMinutes));
+            setSummaryValue('monthWorkedHours', formatSummaryHours(monthData.workedMinutes));
+
+            const note = document.getElementById('summaryPeriodNote');
+            if (note) note.textContent = MONTH_NAMES[calMonth] + ' ' + calYear + ' · through ' + (getReportingEnd(calYear, calMonth) ? getReportingEnd(calYear, calMonth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'period start');
+
+            if (loadedSummaryYear !== calYear) return;
+            const yearData = calculateAttendanceProgress(calYear, 0, 11, yearlyAttendanceRecords, yearlyHolidayRecords);
+            setSummaryValue('yearWorkingDays', yearData.workingDays);
+            setSummaryValue('yearDaysWorked', yearData.daysWorked);
+            setSummaryValue('yearExpectedHours', formatSummaryHours(yearData.expectedMinutes));
+            setSummaryValue('yearWorkedHours', formatSummaryHours(yearData.workedMinutes));
+        }
+
+        function getSaturdaysInMonth(year, month) {
+            const sats = [];
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
+                const date = new Date(year, month, d);
+                if (date.getDay() === 6) sats.push(date);
+            }
+            return sats;
+        }
+
+        function buildDateObject(year, month, day) {
+            const d = new Date(year, month, day);
+            const saturdays = getSaturdaysInMonth(year, month);
+            const secondSat = saturdays.length >= 2 ? saturdays[1].getDate() : null;
+            const fourthSat = saturdays.length >= 4 ? saturdays[3].getDate() : null;
+            const isSunday   = d.getDay() === 0;
+            const isSaturday = d.getDay() === 6;
+            const isSecondSat = isSaturday && day === secondSat;
+            const isFourthSat = isSaturday && day === fourthSat;
+
+            let dayType = "weekday";
+            if (isSunday)           dayType = "sunday";
+            else if (isSecondSat)   dayType = "second-saturday";
+            else if (isFourthSat)   dayType = "fourth-saturday";
+            else if (isSaturday)    dayType = "other-saturday";
+
+            const iso = year + "-" + String(month + 1).padStart(2, '0') + "-" + String(day).padStart(2, '0');
+
+            return {
+                date:            iso,
+                day:             day,
+                month:           month + 1,
+                year:            year,
+                dayName:         DAY_NAMES[d.getDay()],
+                isSunday:        isSunday,
+                isSaturday:      isSaturday,
+                isSecondSaturday: isSecondSat,
+                isFourthSaturday: isFourthSat,
+                dayType:         dayType,
+                hasLogin:        false,
+                hasLogout:       false,
+                hasPermission:   false,
+                hasHalfDay:      false,
+                hasCompOff:      false,
+                isHoliday:       false,
+                isPresent:       false,
+                isAbsent:        false,
+                isLate:          false,
+                attendance:      null
+            };
+        }
+
+        function generateCalendarDates(year, month) {
+            const dates = [];
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                dates.push(buildDateObject(year, month, day));
+            }
+            return dates;
+        }
+
+        function getCalendarStatus(dateStr) {
+            const record = attendanceRecords[dateStr] || {};
+            const compOff = compOffRecords.find(function (item) { return item.workedDate === dateStr || item.usedDate === dateStr; });
+            if (holidayRecords[dateStr]) return { className: 'badge-holiday', label: 'Holiday' };
+            if (compOff) return { className: 'badge-compoff', label: 'Comp-Off' };
+            if (record.halfDay) return { className: 'badge-halfday', label: 'Half Day' };
+            if (record.permissionStart || record.permissionEnd || record.permissionMinutes) return { className: 'badge-permission', label: 'Permission' };
+            if (record.login || record.logout || String(record.status).toLowerCase() === 'present') return { className: 'badge-present', label: 'Present' };
+            return null;
+        }
+
+        function getCalendarDetail(dateStr) {
+            const record = attendanceRecords[dateStr] || {};
+            const compOff = compOffRecords.find(function (item) { return item.workedDate === dateStr || item.usedDate === dateStr; });
+            if (holidayRecords[dateStr]) return 'Holiday';
+            if (compOff) return 'Comp-Off';
+            if (record.halfDay) return record.halfDay + (record.workedMinutes ? ' · ' + formatMinutes(record.workedMinutes) : ' Half');
+            if (record.permissionMinutes) return 'Perm ' + record.permissionMinutes + 'm';
+            if (record.lateMinutes) return 'Late ' + record.lateMinutes + 'm';
+            if (record.workedMinutes) return formatMinutes(record.workedMinutes);
+            return '';
+        }
+
+        function renderCalendar(year, month) {
+            const dates      = generateCalendarDates(year, month);
+            const firstDay   = new Date(year, month, 1).getDay();
+            const totalCells = firstDay + dates.length;
+            const rowsNeeded = Math.ceil(totalCells / 7);
+            const totalSlots  = rowsNeeded * 7;
+            const trailing    = totalSlots - totalCells;
+            const today = new Date();
+            const todayStr = today.getFullYear() + "-" +
+                String(today.getMonth() + 1).padStart(2, '0') + "-" +
+                String(today.getDate()).padStart(2, '0');
+
+            document.getElementById('monthSelect').value = month;
+            document.getElementById('yearSelect').value  = year;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += '<div class="date-square empty"></div>';
+            }
+
+            for (const d of dates) {
+                const classes = ['date-square', 'day-' + d.dayType];
+                const status = getCalendarStatus(d.date);
+                const detail = getCalendarDetail(d.date);
+                if (d.date === selectedDate) classes.push('selected');
+                if (d.date === todayStr)     classes.push('today');
+                if (status && status.label === 'Holiday') classes.push('has-holiday');
+
+                let badge = '';
+                if (status) {
+                    badge = '<span class="day-badge ' + status.className + '" title="' + status.label + '">' + status.label + '</span>';
+                } else if (d.isSecondSaturday) {
+                    badge = '<span class="day-badge badge-second-sat">2nd Sat</span>';
+                } else if (d.isFourthSaturday) {
+                    badge = '<span class="day-badge badge-fourth-sat">4th Sat</span>';
+                } else if (d.isSunday) {
+                    badge = '<span class="day-badge badge-sunday">Sun</span>';
+                }
+
+                grid.innerHTML +=
+                    '<div class="' + classes.join(' ') + '" ' +
+                    'data-date="' + d.date + '" ' +
+                    'onclick="handleDateClick(\'' + d.date + '\')">' +
+                    '<span class="day-number">' + d.day + '</span>' +
+                    badge + (detail ? '<span class="day-detail" title="' + detail + '">' + detail + '</span>' : '') + '</div>';
+            }
+
+            for (let i = 0; i < trailing; i++) {
+                grid.innerHTML += '<div class="date-square empty"></div>';
+            }
+            updateSummaryCards();
+        }
+
+        function handleDateClick(dateStr) {
+            selectedDate = dateStr;
+            currentSelectedDate = dateStr;
+            renderCalendar(calYear, calMonth);
+            openAttendanceModal();
+        }
+
+        /* ================================================================
+           TASK 2 — DATE ATTENDANCE ACTION MODAL
+           ================================================================ */
+
+        // Rebuild the rich date object from a "YYYY-MM-DD" string
+        function getDateObjectFromStr(dateStr) {
+            const parts = dateStr.split('-');
+            return buildDateObject(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+
+        // Format a rich date object into "Wednesday, 19 August 2026"
+        function formatDisplayDate(info) {
+            return info.dayName + ', ' + info.day + ' ' + MONTH_NAMES[info.month - 1] + ' ' + info.year;
+        }
+
+        function openAttendanceModal() {
+            if (!selectedDate) return;
+            const info = getDateObjectFromStr(selectedDate);
+            document.getElementById('modalSelectedDate').textContent = formatDisplayDate(info);
+
+            let dayTypeLabel = 'Normal Working Day';
+            if (info.dayType === 'sunday')              dayTypeLabel = 'Sunday';
+            else if (info.dayType === 'second-saturday') dayTypeLabel = 'Second Saturday';
+            else if (info.dayType === 'fourth-saturday') dayTypeLabel = 'Fourth Saturday';
+            else if (info.dayType === 'other-saturday')  dayTypeLabel = 'Saturday';
+            document.getElementById('modalDayType').textContent = dayTypeLabel;
+
+            // Reset to the action selector view each time the modal opens
+            currentAction = null;
+            selectedAction = null;
+            document.getElementById('modalFormContainer').innerHTML = '';
+            document.getElementById('modalFormContainer').classList.add('form-hidden');
+            document.getElementById('modalActionSelector').classList.remove('form-hidden');
+            document.getElementById('modalActionFeedback').textContent = '';
+            document.querySelectorAll('.action-btn').forEach(function (b) {
+                b.classList.remove('selected');
+            });
+
+            document.getElementById('attendanceModal').classList.add('open');
+        }
+
+        function closeAttendanceModal() {
+            document.getElementById('attendanceModal').classList.remove('open');
+        }
+
+        // Switch to the selected action's form view
+        function selectAction(actionType) {
+            currentAction = actionType;
+            selectedAction = actionType;
+
+            document.getElementById('modalActionSelector').classList.add('form-hidden');
+            document.getElementById('modalFormContainer').classList.remove('form-hidden');
+            document.getElementById('modalFormContainer').innerHTML = getActionFormHTML(actionType);
+
+            // Initialize live calculations and preload existing data when entering forms
+            if (actionType === 'login') {
+                // Preload existing login time if any
+                const storedLogin = getStoredLoginTime(currentSelectedDate);
+                const loginInput = document.getElementById('inputLoginTime');
+                if (storedLogin && loginInput) loginInput.value = storedLogin;
+            } else if (actionType === 'logout') {
+                // Preload existing logout time if any
+                const storedLogout = getStoredLogoutTime(currentSelectedDate);
+                const logoutInput = document.getElementById('inputLogoutTime');
+                if (storedLogout && logoutInput) logoutInput.value = storedLogout;
+                calculateWorkedTime();
+            } else if (actionType === 'permission') {
+                // Preload existing permission remarks if any
+                const storedPerm = getStoredPermissionData(currentSelectedDate);
+                const remarksEl = document.getElementById('permRemarks');
+                if (remarksEl && attendanceRecords[currentSelectedDate] && attendanceRecords[currentSelectedDate].permissionRemarks) {
+                    remarksEl.value = attendanceRecords[currentSelectedDate].permissionRemarks;
+                }
+                calculatePermissionDuration();
+            } else if (actionType === 'halfday') {
+                // Preload existing half-day session and remarks if any
+                const storedSession = getStoredHalfDayData(currentSelectedDate);
+                const sessionSelect = document.getElementById('halfDaySession');
+                const halfRemarks = document.getElementById('halfDayRemarks');
+                if (storedSession && sessionSelect) sessionSelect.value = storedSession;
+                if (halfRemarks && attendanceRecords[currentSelectedDate] && attendanceRecords[currentSelectedDate].halfDayRemarks) {
+                    halfRemarks.value = attendanceRecords[currentSelectedDate].halfDayRemarks;
+                }
+            } else if (actionType === 'compoff') {
+                // Preload existing comp-off dates and remarks if any
+                const storedComp = getStoredCompOfferData(currentSelectedDate);
+                const wdInput = document.getElementById('compWorkedDate');
+                const udInput = document.getElementById('compUsedDate');
+                const compRemarks = document.getElementById('compRemarks');
+                if (storedComp && wdInput && !wdInput.value && storedComp.worked) wdInput.value = storedComp.worked;
+                if (storedComp && udInput && !udInput.value && storedComp.used) udInput.value = storedComp.used;
+                if (compRemarks && attendanceRecords[currentSelectedDate] && attendanceRecords[currentSelectedDate].compRemarks) {
+                    compRemarks.value = attendanceRecords[currentSelectedDate].compRemarks;
+                }
+            }
+        }
+
+        // Return to the 5-button selector without closing the modal
+        function backToActionList() {
+            currentAction = null;
+            selectedAction = null;
+            document.getElementById('modalFormContainer').innerHTML = '';
+            document.getElementById('modalFormContainer').classList.add('form-hidden');
+            document.getElementById('modalActionSelector').classList.remove('form-hidden');
+            document.getElementById('modalActionFeedback').textContent = '';
+            document.querySelectorAll('.action-btn').forEach(function (b) {
+                b.classList.remove('selected');
+            });
+        }
+
+        // Return the HTML for a given action's form
+        function getActionFormHTML(actionType) {
+            const dateVal = currentSelectedDate || '';
+            const backBtn = '<button type="button" onclick="backToActionList()" class="btn-secondary">Back</button>';
+            const forms = {
+                login:
+                    '<div class="modal-label mb-2">Login Time</div>' +
+                    '<input type="time" id="inputLoginTime" class="form-input w-full" />' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'login\')" class="btn-primary">Save Login</button></div>',
+                logout:
+                    '<div class="modal-label mb-2">Logout Time</div>' +
+                    '<input type="time" id="inputLogoutTime" class="form-input w-full" oninput="calculateWorkedTime()" />' +
+                    '<div class="info-panel">' +
+                    '<div class="info-row"><span>Recorded Login Time</span><strong id="loginTimeDisplay">-</strong></div>' +
+                    '<div class="info-row"><span>Worked Time</span><strong id="workedTimeDisplay">-</strong></div>' +
+                    '</div>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'logout\')" class="btn-primary">Save Logout</button></div>',
+                permission:
+                    '<div class="modal-label mb-2">Start Time</div>' +
+                    '<input type="time" id="permStartTime" class="form-input w-full" oninput="calculatePermissionDuration()" />' +
+                    '<div class="modal-label mb-2 mt-3">End Time</div>' +
+                    '<input type="time" id="permEndTime" class="form-input w-full" oninput="calculatePermissionDuration()" />' +
+                    '<div id="permDurationBadge" class="duration-badge">Duration: 0 min</div>' +
+                    '<div class="modal-label mb-2 mt-3">Remarks</div>' +
+                    '<textarea id="permRemarks" class="form-input w-full" rows="3"></textarea>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'permission\')" class="btn-primary">Save Permission</button></div>',
+                halfday:
+                    '<div class="modal-label mb-2">Session</div>' +
+                    '<select id="halfDaySession" class="form-input w-full">' +
+                    '<option value="FN">FN - Forenoon</option><option value="AN">AN - Afternoon</option>' +
+                    '</select>' +
+                    '<div class="modal-label mb-2 mt-3">Remarks</div>' +
+                    '<textarea id="halfDayRemarks" class="form-input w-full" rows="3"></textarea>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'halfday\')" class="btn-primary">Confirm Half Day</button></div>',
+                compoff:
+                    '<div class="modal-label mb-2">Worked On Date</div>' +
+                    '<input type="date" id="compWorkedDate" class="form-input w-full" value="' + dateVal + '" />' +
+                    '<div class="modal-label mb-2 mt-3">Leave Used Date</div>' +
+                    '<input type="date" id="compUsedDate" class="form-input w-full" />' +
+                    '<div class="modal-label mb-2 mt-3">Remarks</div>' +
+                    '<textarea id="compRemarks" class="form-input w-full" rows="3"></textarea>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'compoff\')" class="btn-primary">Apply Comp-Off</button></div>'
+            };
+            return forms[actionType] || '';
+        }
+
+        // Time helpers
+        function timeDiffMinutes(start, end) {
+            const sp = start.split(':').map(Number);
+            const ep = end.split(':').map(Number);
+            let diff = (ep[0] * 60 + ep[1]) - (sp[0] * 60 + sp[1]);
+            if (diff < 0) diff += 24 * 60;   // handle overnight wrap
+            return diff;
+        }
+
+        function formatMinutes(total) {
+            const h = Math.floor(total / 60);
+            const m = total % 60;
+            return h + 'h ' + m + 'm';
+        }
+
+        function getStoredLoginTime(dateStr) {
+            return (attendanceRecords[dateStr] && attendanceRecords[dateStr].login)
+                ? attendanceRecords[dateStr].login
+                : null;
+        }
+
+        function getStoredLogoutTime(dateStr) {
+            return (attendanceRecords[dateStr] && attendanceRecords[dateStr].logout)
+                ? attendanceRecords[dateStr].logout
+                : null;
+        }
+
+        function getStoredPermissionData(dateStr) {
+            const rec = attendanceRecords[dateStr];
+            return rec && (rec.permissionStart || rec.permissionEnd || rec.permissionMinutes)
+                ? { start: rec.permissionStart || '', end: rec.permissionEnd || '', minutes: rec.permissionMinutes || 0 }
+                : null;
+        }
+
+        function getStoredHalfDayData(dateStr) {
+            const rec = attendanceRecords[dateStr];
+            return rec && rec.halfDay ? rec.halfDay : null;
+        }
+
+        function getStoredCompOfferData(dateStr) {
+            const rec = attendanceRecords[dateStr];
+            if (rec && (rec.compWorkedDate || rec.compUsedDate)) {
+                return { worked: rec.compWorkedDate || '', used: rec.compUsedDate || '' };
+            }
+            const compOff = compOffRecords.find(function (item) { return item.workedDate === dateStr || item.usedDate === dateStr; });
+            return compOff ? { worked: compOff.workedDate, used: compOff.usedDate } : null;
+        }
+
+        // Live worked-time calculation (Logout - Login)
+        function calculateWorkedTime() {
+            const loginEl = document.getElementById('loginTimeDisplay');
+            const workedEl = document.getElementById('workedTimeDisplay');
+            if (!loginEl || !workedEl) return;
+            const loginTime = getStoredLoginTime(currentSelectedDate);
+            loginEl.textContent = loginTime || '-';
+            const logoutVal = document.getElementById('inputLogoutTime').value;
+            workedEl.textContent = (loginTime && logoutVal)
+                ? formatMinutes(timeDiffMinutes(loginTime, logoutVal))
+                : '-';
+        }
+
+        // Live permission duration calculation (End - Start) in minutes
+        function calculatePermissionDuration() {
+            const badge = document.getElementById('permDurationBadge');
+            const startInput = document.getElementById('permStartTime');
+            const endInput = document.getElementById('permEndTime');
+            if (!badge || !startInput || !endInput) return;
+
+            // Preload existing permission data if available
+            const storedPerm = getStoredPermissionData(currentSelectedDate);
+            if (storedPerm) {
+                if (!startInput.value && storedPerm.start) startInput.value = storedPerm.start;
+                if (!endInput.value && storedPerm.end) endInput.value = storedPerm.end;
+            }
+
+            const start = startInput.value;
+            const end = endInput.value;
+
+            // Display duration - use saved minutes if times are empty
+            if (start && end) {
+                badge.textContent = 'Duration: ' + timeDiffMinutes(start, end) + ' min';
+            } else if (storedPerm && storedPerm.minutes > 0) {
+                badge.textContent = 'Duration: ' + storedPerm.minutes + ' min (saved)';
+            } else {
+                badge.textContent = 'Duration: 0 min';
+            }
+        }
+
+        async function handleActionSubmit(actionType) {
+            if (!currentSelectedDate) { alert('No date selected.'); return; }
+            const dateStr = currentSelectedDate;
+            const record = attendanceRecords[dateStr] || {};
+            const actionMap = {
+                login: 'SAVE_LOGIN', logout: 'SAVE_LOGOUT', permission: 'SAVE_PERMISSION',
+                halfday: 'SAVE_HALF_DAY', compoff: 'SAVE_COMP_OFF'
+            };
+            const payload = { date: dateStr };
+
+            if (actionType === 'login') {
+                const t = document.getElementById('inputLoginTime').value;
+                if (!t) { alert('Please enter a login time.'); return; }
+                record.login = t;
+                payload.loginTime = t;
+            } else if (actionType === 'logout') {
+                const t = document.getElementById('inputLogoutTime').value;
+                if (!t) { alert('Please enter a logout time.'); return; }
+                record.logout = t;
+                const worked = (record.login && t) ? timeDiffMinutes(record.login, t) : null;
+                record.workedMinutes = worked;
+                payload.logoutTime = t;
+                payload.workedMinutes = worked;
+            } else if (actionType === 'permission') {
+                const s = document.getElementById('permStartTime').value;
+                const e = document.getElementById('permEndTime').value;
+                const r = document.getElementById('permRemarks').value;
+                if (!s || !e) { alert('Please enter permission start and end times.'); return; }
+                const dur = timeDiffMinutes(s, e);
+                record.permissionStart = s;
+                record.permissionEnd = e;
+                record.permissionMinutes = dur;
+                record.permissionRemarks = r;
+                payload.startTime = s;
+                payload.endTime = e;
+                payload.durationMinutes = dur;
+                payload.remarks = r;
+            } else if (actionType === 'halfday') {
+                const session = document.getElementById('halfDaySession').value;
+                const r = document.getElementById('halfDayRemarks').value;
+                record.halfDay = session;
+                record.halfDayRemarks = r;
+                payload.session = session;
+                payload.remarks = r;
+            } else if (actionType === 'compoff') {
+                const wd = document.getElementById('compWorkedDate').value;
+                const ud = document.getElementById('compUsedDate').value;
+                const r = document.getElementById('compRemarks').value;
+                if (!wd || !ud) { alert('Please enter both comp-off dates.'); return; }
+                record.compWorkedDate = wd;
+                record.compUsedDate = ud;
+                record.compRemarks = r;
+                payload.workedDate = wd;
+                payload.usedDate = ud;
+                payload.remarks = r;
+            }
+
+            const submitButton = document.querySelector('#modalFormContainer .btn-primary');
+            const originalText = submitButton ? submitButton.textContent : '';
+            if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Saving...'; }
+            try {
+                await apiRequest(actionMap[actionType], payload, 'POST');
+                // Keep the UI responsive, then replace this temporary cache with the server result.
+                attendanceRecords[dateStr] = record;
+                if (actionType === 'compoff') {
+                    compOffRecords = compOffRecords.filter(function (item) { return item.workedDate !== payload.workedDate && item.usedDate !== payload.usedDate; });
+                    compOffRecords.push({ workedDate: payload.workedDate, usedDate: payload.usedDate, remarks: payload.remarks });
+                }
+                renderCalendar(calYear, calMonth);
+                backToActionList();
+                await loadCalendarData(calYear, calMonth);
+            } catch (error) {
+                console.error('Attendance save failed:', error);
+                alert(error.message || 'Unable to save attendance. Please try again.');
+            } finally {
+                if (submitButton && document.body.contains(submitButton)) { submitButton.disabled = false; submitButton.textContent = originalText; }
+            }
+        }
+
+        function prevMonth() {
+            if (calMonth === 0) { calMonth = 11; calYear--; } else { calMonth--; }
+            renderCalendar(calYear, calMonth);
+            loadCalendarData(calYear, calMonth);
+            loadYearlySummaryData(calYear);
+            loadMonthlySettings(calYear, calMonth);
+        }
+
+        function nextMonth() {
+            if (calMonth === 11) { calMonth = 0; calYear++; } else { calMonth++; }
+            renderCalendar(calYear, calMonth);
+            loadCalendarData(calYear, calMonth);
+            loadYearlySummaryData(calYear);
+            loadMonthlySettings(calYear, calMonth);
+        }
+
+        function changeMonth() {
+            calMonth = parseInt(document.getElementById('monthSelect').value);
+            renderCalendar(calYear, calMonth);
+            loadCalendarData(calYear, calMonth);
+            loadYearlySummaryData(calYear);
+            loadMonthlySettings(calYear, calMonth);
+        }
+
+        function changeYear() {
+            calYear = parseInt(document.getElementById('yearSelect').value);
+            renderCalendar(calYear, calMonth);
+            loadCalendarData(calYear, calMonth);
+            loadYearlySummaryData(calYear);
+            loadMonthlySettings(calYear, calMonth);
+        }
+
+        function initCalendar() {
+            const today = new Date();
+            calYear  = today.getFullYear();
+            calMonth = today.getMonth();
+
+            const ms = document.getElementById('monthSelect');
+            ms.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                ms.innerHTML += '<option value="' + i + '">' + MONTH_NAMES[i] + '</option>';
+            }
+
+            const ys = document.getElementById('yearSelect');
+            ys.innerHTML = '';
+            for (let y = START_YEAR; y <= END_YEAR; y++) {
+                ys.innerHTML += '<option value="' + y + '">' + y + '</option>';
+            }
+
+            renderCalendar(calYear, calMonth);
+            loadCalendarData(calYear, calMonth);
+            loadYearlySummaryData(calYear);
+            loadMonthlySettings(calYear, calMonth);
+        }
+
+        // Close modal when clicking outside the card
+        document.getElementById('attendanceModal').addEventListener('click', function (e) {
+            if (e.target === this) closeAttendanceModal();
+        });
+
+        initCalendar();
+    </script>
+
+</body>
+</html>

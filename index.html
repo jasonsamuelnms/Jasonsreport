@@ -136,11 +136,15 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <a href="index.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📊 Dashboard</a>
+                <a href="attendance.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📋 Attendance</a>
+                <a href="daily-reports.html" class="px-3 py-1.5 text-xs font-bold bg-white text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-slate-100">📝 Daily Reports</a>
                 <span id="roleDisplay" class="px-3 py-1 text-xs font-extrabold uppercase border-2 border-slate-900 rounded bg-slate-200">VIEWER</span>
                 <span id="syncStatus" class="px-3 py-1 text-xs font-bold border border-slate-900 rounded bg-white">🔄 Connecting...</span>
                 <button onclick="exportCSV()" class="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white border-2 border-slate-900 rounded shadow hover:bg-emerald-700">📥 Export CSV</button>
                 <button id="btnNewProject" onclick="openModal()" class="admin-only px-3 py-1.5 text-xs font-bold bg-blue-600 text-white border-2 border-slate-900 rounded shadow hover:bg-blue-700">➕ New Project</button>
-                <button onclick="switchRole()" class="px-3 py-1.5 text-xs font-bold bg-amber-400 text-slate-900 border-2 border-slate-900 rounded shadow hover:bg-amber-500">🔄 Switch Role</button>
+                <button onclick="window.location.href='attendance.html'" class="px-3 py-1.5 text-xs font-bold bg-cyan-600 text-white border-2 border-slate-900 rounded shadow hover:bg-cyan-700">📋 Attendance</button>
+                <button onclick="window.location.href='reports.html'" class="px-3 py-1.5 text-xs font-bold bg-purple-600 text-white border-2 border-slate-900 rounded shadow hover:bg-purple-700">📊 Reports</button>
             </div>
         </div>
 
@@ -407,7 +411,7 @@
 
         function updateCounters() {
             document.getElementById("countTotal").innerText = projects.length;
-            document.getElementById("countDoing").innerText = projects.filter(p => p.status === "DOING").length;
+            document.getElementById("countDoing").innerText = projects.filter(p => p.status === "DOING" || p.status === "SHOOTING" || p.status === "SHOOTED").length;
             document.getElementById("countWaiting").innerText = projects.filter(p => p.status === "WAITING").length;
             document.getElementById("countCorrections").innerText = projects.filter(p => p.status === "CORRECTIONS").length;
             document.getElementById("countApproved").innerText = projects.filter(p => p.status === "APPROVED").length;
