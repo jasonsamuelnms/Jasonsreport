@@ -103,10 +103,10 @@
             </div>
 
             <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-wide uppercase mb-2">Task Management Portal</h2>
-            <label class="sr-only" for="authPassword">Password</label>
-            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="w-full mb-3 px-4 py-3 border-2 border-slate-900 rounded-xl text-sm font-semibold" />
+            <label class="sr-only" for="authEmail">Email address</label>
+            <input id="authEmail" type="email" autocomplete="email" placeholder="Enter your email address" class="w-full mb-3 px-4 py-3 border-2 border-slate-900 rounded-xl text-sm font-semibold" />
             <p id="authMessage" class="min-h-[20px] text-xs font-bold text-slate-600"></p>
-            <p class="text-xs md:text-sm text-slate-500 mb-8">Sign in to access the live dashboard</p>
+            <p class="text-xs md:text-sm text-slate-500 mb-8">Enter your email address to access the dashboard</p>
 
             <!-- Responsive Button Group -->
             <div class="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -312,11 +312,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="dashboard-config.js"></script>
     <script>
         window.JasonAppAuth = {
             isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; },
-            signIn: function (password) { if (!window.JASON_DASHBOARD_PASSWORD || password !== window.JASON_DASHBOARD_PASSWORD) return false; sessionStorage.setItem('jason_dashboard_signed_in', 'true'); return true; },
+            signIn: function (email) { if (!/^\S+@\S+\.\S+$/.test(email)) return false; sessionStorage.setItem('jason_dashboard_signed_in', 'true'); sessionStorage.setItem('jason_dashboard_email', email); return true; },
             signOut: function () { sessionStorage.removeItem('jason_dashboard_signed_in'); }
         };
     </script>
@@ -387,10 +386,10 @@
         }
 
         async function loginAsJason() {
-            const password = document.getElementById('authPassword').value;
+            const email = document.getElementById('authEmail').value.trim();
             const message = document.getElementById('authMessage');
-            if (!JasonAppAuth.signIn(password)) {
-                message.textContent = 'Incorrect password. Please try again.';
+            if (!JasonAppAuth.signIn(email)) {
+                message.textContent = 'Enter a valid email address to continue.';
                 return;
             }
             isAdmin = true;
