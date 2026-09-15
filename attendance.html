@@ -647,7 +647,8 @@
                         <button type="button" onclick="selectAction('logout')" data-action="logout" class="action-btn">Logout</button>
                         <button type="button" onclick="selectAction('permission')" data-action="permission" class="action-btn">Permission</button>
                         <button type="button" onclick="selectAction('halfday')" data-action="halfday" class="action-btn">Half Day</button>
-                        <button type="button" onclick="selectAction('compoff')" data-action="compoff" class="action-btn col-span-2">Comp-Off</button>
+                        <button type="button" onclick="selectAction('compoff')" data-action="compoff" class="action-btn">Comp-Off</button>
+                        <button type="button" onclick="selectAction('holiday')" data-action="holiday" class="action-btn">Holiday</button>
                     </div>
                     <div id="modalActionFeedback" class="mt-3 text-sm font-semibold text-slate-600 text-center min-h-[20px]"></div>
                     <div class="mt-4 flex justify-end">
@@ -1249,6 +1250,9 @@
                 if (compRemarks && attendanceRecords[currentSelectedDate] && attendanceRecords[currentSelectedDate].compRemarks) {
                     compRemarks.value = attendanceRecords[currentSelectedDate].compRemarks;
                 }
+            } else if (actionType === 'holiday') {
+                const holidayInput = document.getElementById('holidayName');
+                if (holidayInput && holidayRecords[currentSelectedDate]) holidayInput.value = holidayRecords[currentSelectedDate];
             }
         }
 
@@ -1311,7 +1315,13 @@
                     '<div class="modal-label mb-2 mt-3">Remarks</div>' +
                     '<textarea id="compRemarks" class="form-input w-full" rows="3"></textarea>' +
                     '<div class="mt-5 flex justify-between gap-2">' + backBtn +
-                    '<button type="button" onclick="handleActionSubmit(\'compoff\')" class="btn-primary">Apply Comp-Off</button></div>'
+                    '<button type="button" onclick="handleActionSubmit(\'compoff\')" class="btn-primary">Apply Comp-Off</button></div>',
+                holiday:
+                    '<div class="modal-label mb-2">Holiday Name</div>' +
+                    '<input type="text" id="holidayName" maxlength="100" class="form-input w-full" placeholder="e.g. Independence Day" />' +
+                    '<div class="info-panel">This marks the selected date as a holiday and updates the calendar.</div>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'holiday\')" class="btn-primary">Save Holiday</button></div>'
             };
             return forms[actionType] || '';
         }
@@ -1410,7 +1420,7 @@
             const record = attendanceRecords[dateStr] || {};
             const actionMap = {
                 login: 'SAVE_LOGIN', logout: 'SAVE_LOGOUT', permission: 'SAVE_PERMISSION',
-                halfday: 'SAVE_HALF_DAY', compoff: 'SAVE_COMP_OFF'
+                halfday: 'SAVE_HALF_DAY', compoff: 'SAVE_COMP_OFF', holiday: 'SAVE_HOLIDAY'
             };
             const payload = { date: dateStr };
 
@@ -1459,6 +1469,10 @@
                 payload.workedDate = wd;
                 payload.usedDate = ud;
                 payload.remarks = r;
+            } else if (actionType === 'holiday') {
+                const name = document.getElementById('holidayName').value.trim();
+                if (!name) { alert('Please enter the holiday name.'); return; }
+                payload.holidayName = name;
             }
 
             const submitButton = document.querySelector('#modalFormContainer .btn-primary');
@@ -1472,6 +1486,7 @@
                     compOffRecords = compOffRecords.filter(function (item) { return item.workedDate !== payload.workedDate && item.usedDate !== payload.usedDate; });
                     compOffRecords.push({ workedDate: payload.workedDate, usedDate: payload.usedDate, remarks: payload.remarks });
                 }
+                if (actionType === 'holiday') holidayRecords[dateStr] = payload.holidayName;
                 renderCalendar(calYear, calMonth);
                 backToActionList();
                 await loadCalendarData(calYear, calMonth);
