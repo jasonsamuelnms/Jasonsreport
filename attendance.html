@@ -661,6 +661,9 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>window.JasonAppAuth = { isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; } };</script>
+    <script src="supabase-client.js?v=2"></script>
     <script>
 
         /* ATTENDANCE CALENDAR - TASK 1 OF 10 */
@@ -1553,12 +1556,56 @@
             loadMonthlySettings(calYear, calMonth);
         }
 
+        async function apiRequest(action, payload) {
+            const client = JasonSupabase.client();
+            const date = payload && payload.date;
+            if (action === 'GET_ATTENDANCE_DATA') {
+                const start = payload.year + '-' + String(payload.month || 1).padStart(2, '0') + '-01';
+                const end = payload.month ? new Date(payload.year, payload.month, 0).toISOString().slice(0,10) : payload.year + '-12-31';
+                const [attendance, compensation, holidays] = await Promise.all([
+                    client.from('attendance_log').select('*').gte('attendance_date',start).lte('attendance_date',end),
+                    client.from('compensation_log').select('*'),
+                    client.from('tn_government_holidays').select('*').gte('holiday_date',start).lte('holiday_date',end)
+                ]);
+                if (attendance.error || compensation.error || holidays.error) throw attendance.error || compensation.error || holidays.error;
+                return { data:{ attendance:attendance.data, compensation:compensation.data, holidays:holidays.data } };
+            }
+            if (action === 'GET_YEARLY_SETTINGS') {
+                const {data,error}=await client.from('holiday_settings').select('*').eq('year',payload.year); if(error)throw error; return {data:data||[]};
+            }
+            if (action === 'GET_MONTHLY_SETTINGS') {
+                const {data,error}=await client.from('holiday_settings').select('*').eq('year',payload.year).eq('month',payload.month).maybeSingle(); if(error)throw error; return {data:data};
+            }
+            if (action === 'SAVE_MONTHLY_SETTINGS') {
+                const row={year:payload.year,month:payload.month,total_days:payload.totalDays,saturdays:payload.saturdays,sundays:payload.sundays,second_saturdays:payload.secondSaturdays,fourth_saturdays:payload.fourthSaturdays,government_holidays:payload.governmentHolidays,additional_working_days:payload.additionalWorkingDays,compensatory_holidays:payload.compensatoryHolidays,school_working_days:payload.schoolWorkingDays};
+                const {error}=await client.from('holiday_settings').upsert(row,{onConflict:'year,month'});if(error)throw error;return {success:true};
+            }
+            if (action === 'SAVE_HOLIDAY') {
+                const {error}=await client.from('tn_government_holidays').upsert({holiday_date:date,holiday_name:payload.holidayName,year:Number(date.slice(0,4))},{onConflict:'holiday_date'});if(error)throw error;return {success:true};
+            }
+            if (action === 'SAVE_COMP_OFF') {
+                const {error}=await client.from('compensation_log').insert({compensation_id:'COMP-'+Date.now(),worked_on_date:payload.workedDate,leave_used_on:payload.usedDate,status:'Available',remarks:payload.remarks||''});if(error)throw error;return {success:true};
+            }
+            const existing=await client.from('attendance_log').select('*').eq('attendance_date',date).maybeSingle(); if(existing.error)throw existing.error;
+            const row=existing.data||{record_id:'ATT-'+Date.now(),attendance_date:date,day:DAY_NAMES[new Date(date+'T00:00:00').getDay()],month:Number(date.slice(5,7)),year:Number(date.slice(0,4)),present:true};
+            if(action==='SAVE_LOGIN'){row.login_time=payload.loginTime;row.present=true;}
+            else if(action==='SAVE_LOGOUT'){row.logout_time=payload.logoutTime;row.worked_minutes=payload.workedMinutes||0;}
+            else if(action==='SAVE_PERMISSION'){row.permission_start=payload.startTime;row.permission_end=payload.endTime;row.permission_minutes=payload.durationMinutes||0;row.remarks=payload.remarks||'';}
+            else if(action==='SAVE_HALF_DAY'){row.half_day=payload.session;row.remarks=payload.remarks||'';}
+            else throw new Error('Unsupported attendance action.');
+            const {error}=await client.from('attendance_log').upsert(row,{onConflict:'attendance_date'});if(error)throw error;return {success:true};
+        }
+
         // Close modal when clicking outside the card
         document.getElementById('attendanceModal').addEventListener('click', function (e) {
             if (e.target === this) closeAttendanceModal();
         });
 
-        initCalendar();
+        if (!JasonAppAuth.isSignedIn()) {
+            location.href = 'index.html';
+        } else {
+            initCalendar();
+        }
     </script>
 
 </body>

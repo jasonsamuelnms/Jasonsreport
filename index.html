@@ -49,6 +49,7 @@
         .status-SHOOTED { background-color: #20c997; }
         .status-REJECTED { background-color: #6c757d; }
         .status-ON_HOLD { background-color: #e83e8c; }
+        .status-DROPPED { background-color: #7c2d12; }
 
         /* Compact Single Line Date Bar */
         .status-date-meta {
@@ -102,7 +103,10 @@
             </div>
 
             <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-wide uppercase mb-2">Task Management Portal</h2>
-            <p class="text-xs md:text-sm text-slate-500 mb-8">Select your access mode to enter the live dashboard</p>
+            <label class="sr-only" for="authPassword">Password</label>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter password" class="w-full mb-3 px-4 py-3 border-2 border-slate-900 rounded-xl text-sm font-semibold" />
+            <p id="authMessage" class="min-h-[20px] text-xs font-bold text-slate-600"></p>
+            <p class="text-xs md:text-sm text-slate-500 mb-8">Sign in to access the live dashboard</p>
 
             <!-- Responsive Button Group -->
             <div class="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -112,7 +116,7 @@
                     🔐 Login as Jason (Admin)
                 </button>
                 <button 
-                    onclick="enterAsViewer()" 
+                    onclick="enterAsViewer()" style="display:none"
                     class="w-full sm:w-1/2 px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm rounded-xl shadow-md border-2 border-slate-900 transition-all duration-200 active:scale-95">
                     👁️ View Only Mode
                 </button>
@@ -174,6 +178,26 @@
                 <div class="text-[10px] font-black text-slate-500 uppercase">Posted</div>
                 <div class="text-2xl font-black text-slate-900" id="countPosted">0</div>
             </div>
+            <div onclick="filterByCard('SHOOTING')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-blue-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Shooting</div>
+                <div class="text-2xl font-black text-slate-900" id="countShooting">0</div>
+            </div>
+            <div onclick="filterByCard('SHOOTED')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-teal-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Shooted</div>
+                <div class="text-2xl font-black text-slate-900" id="countShooted">0</div>
+            </div>
+            <div onclick="filterByCard('REJECTED')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-slate-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Rejected</div>
+                <div class="text-2xl font-black text-slate-900" id="countRejected">0</div>
+            </div>
+            <div onclick="filterByCard('ON_HOLD')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-pink-500 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">On Hold</div>
+                <div class="text-2xl font-black text-slate-900" id="countOnHold">0</div>
+            </div>
+            <div onclick="filterByCard('DROPPED')" class="bg-white p-3 border-2 border-slate-900 rounded border-t-4 border-t-amber-900 shadow cursor-pointer hover:-translate-y-0.5 transition-transform">
+                <div class="text-[10px] font-black text-slate-500 uppercase">Dropped</div>
+                <div class="text-2xl font-black text-slate-900" id="countDropped">0</div>
+            </div>
         </div>
 
         <!-- Controls / Search Bar -->
@@ -199,6 +223,7 @@
                     <option value="POSTED">Posted</option>
                     <option value="SHOOTING">Shooting</option>
                     <option value="SHOOTED">Shooted</option>
+                    <option value="DROPPED">Dropped</option>
                     <option value="REJECTED">Rejected</option>
                     <option value="ON_HOLD">On Hold</option>
                 </select>
@@ -265,6 +290,7 @@
                         <option value="POSTED">Posted</option>
                         <option value="SHOOTING">Shooting</option>
                         <option value="SHOOTED">Shooted</option>
+                        <option value="DROPPED">Dropped</option>
                         <option value="REJECTED">Rejected</option>
                         <option value="ON_HOLD">On Hold</option>
                     </select>
@@ -285,10 +311,18 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="dashboard-config.js"></script>
+    <script>
+        window.JasonAppAuth = {
+            isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; },
+            signIn: function (password) { if (!window.JASON_DASHBOARD_PASSWORD || password !== window.JASON_DASHBOARD_PASSWORD) return false; sessionStorage.setItem('jason_dashboard_signed_in', 'true'); return true; },
+            signOut: function () { sessionStorage.removeItem('jason_dashboard_signed_in'); }
+        };
+    </script>
+    <script src="supabase-client.js?v=2"></script>
     <!-- Script Section -->
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzp8G0XhokdAVjFNxQqySAZGKRLjGO6l22ZROlcabfRqMBdCRsbSdbSKlj3dx6m29DfpQ/exec";
-        const ADMIN_PASSWORD = "Reset@13579";
 
         const INSTITUTIONS = ["MAT", "CBSE", "KPT", "UDT", "ORICBE", "ORIKOT", "NIK", "KINCBE", "KINUDT", "KINGHA", "KINRSP", "GRP", "QLA", "129", "Misc"];
         const MEDIUMS = ["Youtube", "GMB", "Website", "FB", "Insta", "Link", "Whatsapp", "Email", "GAds", "Mads", "Misc"];
@@ -338,6 +372,45 @@
 
         function switchRole() {
             sessionStorage.removeItem("dashboard_role");
+            location.reload();
+        }
+
+        // This is a private, direct-access dashboard: no email sign-in is required.
+        function checkSession() {
+            if (JasonAppAuth.isSignedIn()) {
+                isAdmin = true;
+                showDashboard();
+                return;
+            }
+            document.getElementById("authGate").style.display = "flex";
+            document.getElementById("dashboardContent").style.display = "none";
+        }
+
+        async function loginAsJason() {
+            const password = document.getElementById('authPassword').value;
+            const message = document.getElementById('authMessage');
+            if (!JasonAppAuth.signIn(password)) {
+                message.textContent = 'Incorrect password. Please try again.';
+                return;
+            }
+            isAdmin = true;
+            showDashboard();
+            return;
+            if (!email) { message.textContent = 'Enter your email address first.'; return; }
+            try {
+                message.textContent = 'Sending secure sign-in link…';
+                await JasonSupabase.sendMagicLink(email);
+                message.textContent = 'Check your inbox and open the link in this browser.';
+            } catch (error) { message.textContent = error.message; }
+        }
+
+        function enterAsViewer() {
+            document.getElementById('authMessage').textContent = 'Viewer access now requires a secure Supabase account.';
+        }
+
+        async function switchRole() {
+            JasonAppAuth.signOut();
+            await JasonSupabase.signOut();
             location.reload();
         }
 
@@ -411,11 +484,16 @@
 
         function updateCounters() {
             document.getElementById("countTotal").innerText = projects.length;
-            document.getElementById("countDoing").innerText = projects.filter(p => p.status === "DOING" || p.status === "SHOOTING" || p.status === "SHOOTED").length;
+            document.getElementById("countDoing").innerText = projects.filter(p => p.status === "DOING").length;
             document.getElementById("countWaiting").innerText = projects.filter(p => p.status === "WAITING").length;
             document.getElementById("countCorrections").innerText = projects.filter(p => p.status === "CORRECTIONS").length;
             document.getElementById("countApproved").innerText = projects.filter(p => p.status === "APPROVED").length;
             document.getElementById("countPosted").innerText = projects.filter(p => p.status === "POSTED").length;
+            document.getElementById("countShooting").innerText = projects.filter(p => p.status === "SHOOTING").length;
+            document.getElementById("countShooted").innerText = projects.filter(p => p.status === "SHOOTED").length;
+            document.getElementById("countRejected").innerText = projects.filter(p => p.status === "REJECTED").length;
+            document.getElementById("countOnHold").innerText = projects.filter(p => p.status === "ON_HOLD").length;
+            document.getElementById("countDropped").innerText = projects.filter(p => p.status === "DROPPED").length;
         }
 
         function filterByCard(status) {
@@ -428,6 +506,7 @@
             val = String(val).trim().toUpperCase();
             if (val.includes("SHOOTING")) return "SHOOTING";
             if (val.includes("SHOOTED")) return "SHOOTED";
+            if (val.includes("DROPP")) return "DROPPED";
             if (val.includes("REJECT")) return "REJECTED";
             if (val.includes("HOLD")) return "ON_HOLD";
             if (val.includes("WAIT")) return "WAITING";
@@ -585,6 +664,7 @@
                             <option value="POSTED" ${p.status === 'POSTED' ? 'selected' : ''}>POSTED</option>
                             <option value="SHOOTING" ${p.status === 'SHOOTING' ? 'selected' : ''}>SHOOTING</option>
                             <option value="SHOOTED" ${p.status === 'SHOOTED' ? 'selected' : ''}>SHOOTED</option>
+                            <option value="DROPPED" ${p.status === 'DROPPED' ? 'selected' : ''}>DROPPED</option>
                             <option value="REJECTED" ${p.status === 'REJECTED' ? 'selected' : ''}>REJECTED</option>
                             <option value="ON_HOLD" ${p.status === 'ON_HOLD' ? 'selected' : ''}>ON HOLD</option>
                         </select>
@@ -738,6 +818,50 @@
 
         function escapeHtml(str) {
             return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function databaseDate(value) {
+            if (!value) return null;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+            const match = String(value).match(/^(\d{2})-([A-Z]{3})-(\d{2})$/i);
+            if (match) {
+                const months = { JAN:'01', FEB:'02', MAR:'03', APR:'04', MAY:'05', JUN:'06', JUL:'07', AUG:'08', SEP:'09', OCT:'10', NOV:'11', DEC:'12' };
+                return '20' + match[3] + '-' + months[match[2].toUpperCase()] + '-' + match[1];
+            }
+            const parsed = new Date(value);
+            return isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+        }
+
+        async function fetchFromSheet() {
+            setStatus('Syncing…');
+            try {
+                const { data, error } = await JasonSupabase.client().from('projects').select('*').order('last_updated', { ascending: false });
+                if (error) throw error;
+                projects = data.map(function (row, index) {
+                    const history = Array.isArray(row.history) ? row.history : [];
+                    return {
+                        id: String(row.id || (Date.now() + index)), eventName: row.event_name || 'Untitled Project',
+                        inst: row.institution || 'Misc', medium: row.medium || 'Misc', type: row.type || 'Misc',
+                        status: normalizeStatus(row.status), driveLink: row.drive_link || '', approver: row.approver || '',
+                        desc: row.description || '', createdDate: row.created_date ? formatDateShort(new Date(row.created_date + 'T00:00:00')) : '',
+                        lastUpdated: row.last_updated ? formatDateShort(new Date(row.last_updated + 'T00:00:00')) : '', history: history
+                    };
+                });
+                setStatus('Live'); updateCounters(); renderDashboard();
+            } catch (error) { console.error(error); setStatus(error.message || 'Sync failed', true); }
+        }
+
+        async function pushToSheet(silent = false) {
+            if (!isAdmin) return;
+            if (!silent) setStatus('Saving…');
+            const payload = projects.map(function (p) {
+                return { id:p.id, event_name:p.eventName, institution:p.inst, medium:p.medium, type:p.type, status:p.status,
+                    drive_link:p.driveLink, approver:p.approver, history:p.history || [], description:p.desc || '',
+                    created_date:databaseDate(p.createdDate), last_updated:databaseDate(p.lastUpdated) };
+            });
+            const { error } = await JasonSupabase.client().from('projects').upsert(payload, { onConflict: 'id' });
+            if (error) { if (!silent) setStatus(error.message, true); throw error; }
+            if (!silent) setStatus('Saved live');
         }
 
         // Run check on load

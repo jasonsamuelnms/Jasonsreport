@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>window.JasonAppAuth = { isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; } };</script>
+    <script src="supabase-client.js?v=2"></script>
     <style>
         :root { --primary: #0f4c81; --border: #1e293b; }
         body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
@@ -100,7 +103,34 @@
         async function loadRangeReports(){const start=document.getElementById('filterStart').value,end=document.getElementById('filterEnd').value;if(!start||!end)return;try{const data=await api('GET_REPORTS',{start,end});rangeReports=data.reports||[];rangeAttendance=data.attendance||[];renderRangeReports();}catch(error){setStatus(error.message,true);}}
         function renderRangeReports(){const institution=document.getElementById('filterInstitution').value;const reports=rangeReports.filter(r=>!institution||r.institution===institution);const days=new Set(reports.map(r=>r.date));const institutions=new Set(reports.map(r=>r.institution));const attendanceByDate={};rangeAttendance.forEach(a=>attendanceByDate[String(a.date).slice(0,10)]=a);const workMinutes=[...days].reduce((sum,date)=>sum+(Number((attendanceByDate[date]||{}).workedMinutes)||0),0);document.getElementById('rangeEntryCount').textContent=reports.length;document.getElementById('rangeDayCount').textContent=days.size;document.getElementById('rangeWorkTime').textContent=formatMinutes(workMinutes);document.getElementById('rangeInstitutionCount').textContent=institutions.size;document.getElementById('rangeReportTable').innerHTML=reports.length?reports.map(r=>'<tr class="border-t border-slate-100"><td class="p-3 font-semibold">'+escapeHtml(r.date)+'</td><td class="p-3">'+escapeHtml(r.institution)+'</td><td class="p-3 font-bold">'+escapeHtml(r.title)+'</td><td class="p-3 text-slate-600">'+escapeHtml(r.details||'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="p-6 text-center font-semibold text-slate-500">No reports in this range.</td></tr>';}
         function exportReports(){const institution=document.getElementById('filterInstitution').value;const attendanceByDate={};rangeAttendance.forEach(a=>attendanceByDate[String(a.date).slice(0,10)]=a);const rows=rangeReports.filter(r=>!institution||r.institution===institution).map(r=>({Date:r.date,Institution:r.institution,'Report Title':r.title,Details:r.details||'','Attendance Work Time':formatMinutes((attendanceByDate[r.date]||{}).workedMinutes)}));if(!rows.length){alert('There are no reports to export.');return;}const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,XLSX.utils.json_to_sheet(rows),'Daily Reports');XLSX.writeFile(workbook,'Daily_Reports_'+document.getElementById('filterStart').value+'_to_'+document.getElementById('filterEnd').value+'.xlsx');}
-        setupSelects();document.getElementById('reportDate').value=selectedDate;applyRangePreset();loadCalendar();
+        async function api(action,payload,method='GET') {
+            const client = JasonSupabase.client();
+            if (action === 'GET_REPORTS') {
+                const start = payload.start || payload.date || payload.year + '-' + String(payload.month).padStart(2,'0') + '-01';
+                const end = payload.end || payload.date || firstLastOfMonth(viewYear, viewMonth).end;
+                const [reportsResult, attendanceResult] = await Promise.all([
+                    client.from('daily_reports').select('*').gte('report_date', start).lte('report_date', end).order('report_date'),
+                    client.from('attendance_log').select('*').gte('attendance_date', start).lte('attendance_date', end)
+                ]);
+                if (reportsResult.error) throw reportsResult.error;
+                if (attendanceResult.error) throw attendanceResult.error;
+                return {
+                    reports: reportsResult.data.map(r=>({id:r.id,reportId:r.report_id,date:r.report_date,institution:r.institution,title:r.report_title,details:r.report_details||''})),
+                    attendance: attendanceResult.data.map(a=>({date:a.attendance_date,workedMinutes:a.worked_minutes||0}))
+                };
+            }
+            if (action === 'SAVE_REPORT') {
+                const { error } = await client.from('daily_reports').insert({ report_date:payload.date, institution:payload.institution, report_title:payload.title, report_details:payload.details || '' });
+                if (error) throw error;
+                return { success:true };
+            }
+            throw new Error('Unsupported report action.');
+        }
+        if (!JasonAppAuth.isSignedIn()) {
+            location.href = 'index.html';
+        } else {
+            setupSelects();document.getElementById('reportDate').value=selectedDate;applyRangePreset();loadCalendar();
+        }
     </script>
 </body>
 </html>
