@@ -114,6 +114,7 @@
         .badge-sunday { background: #ef4444; }
         .badge-second-sat, .badge-fourth-sat { background: #f59e0b; }
         .badge-present { background: #16a34a; }
+        .badge-absent { background: #dc2626; }
         .badge-halfday { background: #f59e0b; }
         .badge-permission { background: #2563eb; }
         .badge-compoff { background: #8b5cf6; }
@@ -433,6 +434,7 @@
             text-transform: none;
         }
         .date-square:has(.badge-present) .day-detail { background: #ccfbf1; color: #115e59; }
+        .date-square:has(.badge-absent) .day-detail { background: #fee2e2; color: #b91c1c; }
         .date-square:has(.badge-halfday) .day-detail { background: #fef3c7; color: #92400e; }
         .date-square:has(.badge-permission) .day-detail { background: #dbeafe; color: #1d4ed8; }
         .date-square:has(.badge-compoff) .day-detail { background: #ede9fe; color: #6d28d9; }
@@ -647,6 +649,7 @@
                         <button type="button" onclick="selectAction('logout')" data-action="logout" class="action-btn">Logout</button>
                         <button type="button" onclick="selectAction('permission')" data-action="permission" class="action-btn">Permission</button>
                         <button type="button" onclick="selectAction('halfday')" data-action="halfday" class="action-btn">Half Day</button>
+                        <button type="button" onclick="selectAction('absent')" data-action="absent" class="action-btn">Absent</button>
                         <button type="button" onclick="selectAction('compoff')" data-action="compoff" class="action-btn">Comp-Off</button>
                         <button type="button" onclick="selectAction('holiday')" data-action="holiday" class="action-btn">Holiday</button>
                     </div>
@@ -747,6 +750,8 @@
                     permissionRemarks: getValue(row, ['permissionRemarks', 'remarks']) || record.permissionRemarks || '',
                     halfDay: getValue(row, ['halfDay', 'halfDaySession', 'session']) || record.halfDay || '',
                     halfDayRemarks: getValue(row, ['halfDayRemarks']) || record.halfDayRemarks || '',
+                    present: String(getValue(row, ['present', 'isPresent'])).toLowerCase() === 'true',
+                    absent: String(getValue(row, ['absent', 'isAbsent'])).toLowerCase() === 'true',
                     late: String(getValue(row, ['late', 'isLate'])).toLowerCase() === 'true' || record.late || false,
                     lateMinutes: Number(getValue(row, ['lateMinutes', 'lateMin'])) || record.lateMinutes || 0,
                     status: getValue(row, ['status', 'attendanceStatus']) || record.status || ''
@@ -1079,6 +1084,7 @@
             const compOff = compOffRecords.find(function (item) { return item.workedDate === dateStr || item.usedDate === dateStr; });
             if (holidayRecords[dateStr]) return { className: 'badge-holiday', label: 'Holiday' };
             if (compOff) return { className: 'badge-compoff', label: 'Comp-Off' };
+            if (record.absent || String(record.status).toLowerCase() === 'absent') return { className: 'badge-absent', label: 'Absent' };
             if (record.halfDay) return { className: 'badge-halfday', label: 'Half Day' };
             if (record.permissionStart || record.permissionEnd || record.permissionMinutes) return { className: 'badge-permission', label: 'Permission' };
             if (record.login || record.logout || String(record.status).toLowerCase() === 'present') return { className: 'badge-present', label: 'Present' };
@@ -1090,6 +1096,7 @@
             const compOff = compOffRecords.find(function (item) { return item.workedDate === dateStr || item.usedDate === dateStr; });
             if (holidayRecords[dateStr]) return 'Holiday';
             if (compOff) return 'Comp-Off';
+            if (record.absent || String(record.status).toLowerCase() === 'absent') return 'Absent';
             if (record.halfDay) return record.halfDay + (record.workedMinutes ? ' · ' + formatMinutes(record.workedMinutes) : ' Half');
             if (record.permissionMinutes) return 'Perm ' + record.permissionMinutes + 'm';
             if (record.lateMinutes) return 'Late ' + record.lateMinutes + 'm';
@@ -1310,6 +1317,12 @@
                     '<textarea id="halfDayRemarks" class="form-input w-full" rows="3"></textarea>' +
                     '<div class="mt-5 flex justify-between gap-2">' + backBtn +
                     '<button type="button" onclick="handleActionSubmit(\'halfday\')" class="btn-primary">Confirm Half Day</button></div>',
+                absent:
+                    '<div class="modal-label mb-2">Remarks</div>' +
+                    '<textarea id="absentRemarks" class="form-input w-full" rows="3" placeholder="Optional reason for absence"></textarea>' +
+                    '<div class="info-panel">Marking this date absent clears its recorded login, logout, permission, and half-day details.</div>' +
+                    '<div class="mt-5 flex justify-between gap-2">' + backBtn +
+                    '<button type="button" onclick="handleActionSubmit(\'absent\')" class="btn-primary">Mark Absent</button></div>',
                 compoff:
                     '<div class="modal-label mb-2">Worked On Date</div>' +
                     '<input type="date" id="compWorkedDate" class="form-input w-full" value="' + dateVal + '" />' +
@@ -1423,7 +1436,7 @@
             const record = attendanceRecords[dateStr] || {};
             const actionMap = {
                 login: 'SAVE_LOGIN', logout: 'SAVE_LOGOUT', permission: 'SAVE_PERMISSION',
-                halfday: 'SAVE_HALF_DAY', compoff: 'SAVE_COMP_OFF', holiday: 'SAVE_HOLIDAY'
+                halfday: 'SAVE_HALF_DAY', absent: 'SAVE_ABSENT', compoff: 'SAVE_COMP_OFF', holiday: 'SAVE_HOLIDAY'
             };
             const payload = { date: dateStr };
 
@@ -1431,6 +1444,9 @@
                 const t = document.getElementById('inputLoginTime').value;
                 if (!t) { alert('Please enter a login time.'); return; }
                 record.login = t;
+                record.present = true;
+                record.absent = false;
+                record.status = 'Present';
                 payload.loginTime = t;
             } else if (actionType === 'logout') {
                 const t = document.getElementById('inputLogoutTime').value;
@@ -1460,6 +1476,19 @@
                 record.halfDay = session;
                 record.halfDayRemarks = r;
                 payload.session = session;
+                payload.remarks = r;
+            } else if (actionType === 'absent') {
+                const r = document.getElementById('absentRemarks').value.trim();
+                record.login = '';
+                record.logout = '';
+                record.workedMinutes = 0;
+                record.permissionStart = '';
+                record.permissionEnd = '';
+                record.permissionMinutes = 0;
+                record.halfDay = '';
+                record.present = false;
+                record.absent = true;
+                record.status = 'Absent';
                 payload.remarks = r;
             } else if (actionType === 'compoff') {
                 const wd = document.getElementById('compWorkedDate').value;
@@ -1588,10 +1617,11 @@
             }
             const existing=await client.from('attendance_log').select('*').eq('attendance_date',date).maybeSingle(); if(existing.error)throw existing.error;
             const row=existing.data||{record_id:'ATT-'+Date.now(),attendance_date:date,day:DAY_NAMES[new Date(date+'T00:00:00').getDay()],month:Number(date.slice(5,7)),year:Number(date.slice(0,4)),present:true};
-            if(action==='SAVE_LOGIN'){row.login_time=payload.loginTime;row.present=true;}
+            if(action==='SAVE_LOGIN'){row.login_time=payload.loginTime;row.present=true;row.absent=false;}
             else if(action==='SAVE_LOGOUT'){row.logout_time=payload.logoutTime;row.worked_minutes=payload.workedMinutes||0;}
             else if(action==='SAVE_PERMISSION'){row.permission_start=payload.startTime;row.permission_end=payload.endTime;row.permission_minutes=payload.durationMinutes||0;row.remarks=payload.remarks||'';}
             else if(action==='SAVE_HALF_DAY'){row.half_day=payload.session;row.remarks=payload.remarks||'';}
+            else if(action==='SAVE_ABSENT'){row.login_time=null;row.logout_time=null;row.worked_minutes=0;row.permission_start=null;row.permission_end=null;row.permission_minutes=0;row.half_day=null;row.present=false;row.absent=true;row.remarks=payload.remarks||'';}
             else throw new Error('Unsupported attendance action.');
             const {error}=await client.from('attendance_log').upsert(row,{onConflict:'attendance_date'});if(error)throw error;return {success:true};
         }
