@@ -105,8 +105,10 @@
             <h2 class="text-xl md:text-2xl font-bold text-slate-800 tracking-wide uppercase mb-2">Task Management Portal</h2>
             <label class="sr-only" for="authEmail">Email address</label>
             <input id="authEmail" type="email" autocomplete="email" placeholder="Enter your email address" class="w-full mb-3 px-4 py-3 border-2 border-slate-900 rounded-xl text-sm font-semibold" />
+            <label class="sr-only" for="authPassword">Password</label>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Enter your password" class="w-full mb-3 px-4 py-3 border-2 border-slate-900 rounded-xl text-sm font-semibold" />
             <p id="authMessage" class="min-h-[20px] text-xs font-bold text-slate-600"></p>
-            <p class="text-xs md:text-sm text-slate-500 mb-8">Enter your email address to access the dashboard</p>
+            <p class="text-xs md:text-sm text-slate-500 mb-8">Sign in to access your private dashboard</p>
 
             <!-- Responsive Button Group -->
             <div class="w-full flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -312,13 +314,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        window.JasonAppAuth = {
-            isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; },
-            signIn: function (email) { if (!/^\S+@\S+\.\S+$/.test(email)) return false; sessionStorage.setItem('jason_dashboard_signed_in', 'true'); sessionStorage.setItem('jason_dashboard_email', email); return true; },
-            signOut: function () { sessionStorage.removeItem('jason_dashboard_signed_in'); }
-        };
-    </script>
     <script src="supabase-client.js?v=2"></script>
     <!-- Script Section -->
     <script>
@@ -374,41 +369,40 @@
             location.reload();
         }
 
-        // This is a private, direct-access dashboard: no email sign-in is required.
-        function checkSession() {
-            if (JasonAppAuth.isSignedIn()) {
-                isAdmin = true;
-                showDashboard();
-                return;
-            }
+        async function checkSession() {
+            try {
+                const user = await JasonSupabase.currentUser();
+                if (user) {
+                    isAdmin = true;
+                    showDashboard();
+                    return;
+                }
+            } catch (error) { console.error(error); }
             document.getElementById("authGate").style.display = "flex";
             document.getElementById("dashboardContent").style.display = "none";
         }
 
         async function loginAsJason() {
             const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
             const message = document.getElementById('authMessage');
-            if (!JasonAppAuth.signIn(email)) {
-                message.textContent = 'Enter a valid email address to continue.';
+            if (!email || !password) {
+                message.textContent = 'Enter your email address and password.';
                 return;
             }
-            isAdmin = true;
-            showDashboard();
-            return;
-            if (!email) { message.textContent = 'Enter your email address first.'; return; }
             try {
-                message.textContent = 'Sending secure sign-in link…';
-                await JasonSupabase.sendMagicLink(email);
-                message.textContent = 'Check your inbox and open the link in this browser.';
+                message.textContent = 'Signing in…';
+                await JasonSupabase.signInWithPassword(email, password);
+                isAdmin = true;
+                showDashboard();
             } catch (error) { message.textContent = error.message; }
         }
 
         function enterAsViewer() {
-            document.getElementById('authMessage').textContent = 'Viewer access now requires a secure Supabase account.';
+            document.getElementById('authMessage').textContent = 'Use your authorised account to sign in.';
         }
 
         async function switchRole() {
-            JasonAppAuth.signOut();
             await JasonSupabase.signOut();
             location.reload();
         }

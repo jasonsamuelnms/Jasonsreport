@@ -34,6 +34,12 @@
     if (error) throw error;
   }
 
+  async function signInWithPassword(email, password) {
+    const { data, error } = await getClient().auth.signInWithPassword({ email: email, password: password });
+    if (error) throw error;
+    return data.user;
+  }
+
   async function signOut() {
     const { error } = await getClient().auth.signOut();
     if (error) throw error;
@@ -63,6 +69,7 @@
     client: getClient,
     currentUser: currentUser,
     requireUser: requireUser,
+    signInWithPassword: signInWithPassword,
     sendMagicLink: sendMagicLink,
     signOut: signOut,
     onAuthChange: onAuthChange,

@@ -10,7 +10,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>window.JasonAppAuth = { isSignedIn: function () { return sessionStorage.getItem('jason_dashboard_signed_in') === 'true'; } };</script>
     <script src="supabase-client.js?v=2"></script>
     <style>
         :root { --primary: #0f4c81; --border: #1e293b; }
@@ -142,11 +141,10 @@
             }
             throw new Error('Unsupported report action.');
         }
-        if (!JasonAppAuth.isSignedIn()) {
-            location.href = 'index.html';
-        } else {
+        JasonSupabase.currentUser().then(function (user) {
+            if (!user) { location.href = 'index.html'; return; }
             setupSelects();document.getElementById('reportDate').value=selectedDate;applyRangePreset();loadCalendar();
-        }
+        }).catch(function () { location.href = 'index.html'; });
     </script>
 </body>
 </html>
